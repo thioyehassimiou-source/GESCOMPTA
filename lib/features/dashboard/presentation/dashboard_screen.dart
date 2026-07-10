@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/database/database.dart';
 import '../../../core/format/formatters.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -13,6 +12,7 @@ import '../../../core/widgets/app_chip.dart';
 import '../../../core/widgets/app_table.dart';
 import '../../../core/widgets/app_button.dart';
 import '../application/dashboard_providers.dart';
+import '../domain/entities/dashboard_snapshot.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -401,7 +401,7 @@ class _WavePainter extends CustomPainter {
 class _RestockCard extends StatelessWidget {
   const _RestockCard({required this.products});
 
-  final List<Product> products;
+  final List<LowStockItem> products;
 
   @override
   Widget build(BuildContext context) {
@@ -440,7 +440,7 @@ class _RestockCard extends StatelessWidget {
 class _RestockRow extends StatelessWidget {
   const _RestockRow({required this.product});
 
-  final Product product;
+  final LowStockItem product;
 
   @override
   Widget build(BuildContext context) {
