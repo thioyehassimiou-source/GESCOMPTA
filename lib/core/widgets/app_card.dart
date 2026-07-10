@@ -14,12 +14,17 @@ class AppCard extends StatelessWidget {
     this.onTap,
     this.hoverBorder = false,
     this.clip = false,
+    this.height,
   });
 
   final Widget child;
   final EdgeInsetsGeometry padding;
   final Color? color;
   final VoidCallback? onTap;
+
+  /// Hauteur fixe optionnelle (utile pour des cartes de hauteur uniforme, ex.
+  /// tuiles d'indicateurs alignées dans une `Row`).
+  final double? height;
 
   /// Bord qui passe au primaire au survol (cartes interactives).
   final bool hoverBorder;
@@ -37,7 +42,7 @@ class AppCard extends StatelessWidget {
     final radius = BorderRadius.circular(AppRadius.xl);
     final content = Padding(padding: padding, child: child);
 
-    return DecoratedBox(
+    final card = DecoratedBox(
       decoration: BoxDecoration(
         color: color ?? theme.colorScheme.surfaceContainerLowest,
         borderRadius: radius,
@@ -56,5 +61,7 @@ class AppCard extends StatelessWidget {
               ),
       ),
     );
+
+    return height == null ? card : SizedBox(height: height, child: card);
   }
 }

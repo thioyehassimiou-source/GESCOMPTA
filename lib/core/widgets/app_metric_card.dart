@@ -15,6 +15,12 @@ class AppMetricCard extends StatelessWidget {
   final Widget? actionWidget;
   final String? description;
 
+  /// Hauteur fixe de la carte. Indispensable : le contenu s'appuie sur des
+  /// widgets à flex (`Spacer`, `Flexible`) qui exigent une hauteur bornée — sans
+  /// elle, la carte plantée sous un parent à hauteur infinie (ex. une `Row` de
+  /// cartes dans un `SingleChildScrollView`).
+  final double height;
+
   const AppMetricCard({
     super.key,
     required this.title,
@@ -25,6 +31,7 @@ class AppMetricCard extends StatelessWidget {
     this.trendText,
     this.actionWidget,
     this.description,
+    this.height = 150,
   });
 
   @override
@@ -33,6 +40,7 @@ class AppMetricCard extends StatelessWidget {
 
     if (variant == AppMetricVariant.primary) {
       return Container(
+        height: height,
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
           color: theme.colorScheme.primary,
@@ -97,6 +105,7 @@ class AppMetricCard extends StatelessWidget {
     final valueColor = isError ? theme.colorScheme.error : theme.colorScheme.primary;
 
     return AppCard(
+      height: height,
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
