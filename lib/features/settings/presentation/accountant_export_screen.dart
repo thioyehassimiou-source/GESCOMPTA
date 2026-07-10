@@ -1,27 +1,18 @@
-import 'package:drift/drift.dart' show OrderingTerm;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/database/database.dart';
-import '../../../core/providers/database_provider.dart';
+import '../../accounting/application/accounting_providers.dart';
 
 /// Espace réservé au comptable. C'est le SEUL écran où apparaît le vocabulaire
 /// SYSCOHADA (plan comptable, journal, balance). Le commerçant n'y vient pas :
 /// on y accède uniquement depuis Réglages, avec un avertissement explicite.
-final _accountsProvider = StreamProvider<List<Account>>((ref) {
-  final db = ref.watch(databaseProvider);
-  return (db.select(db.accounts)
-        ..orderBy([(t) => OrderingTerm(expression: t.code)]))
-      .watch();
-});
-
 class AccountantExportScreen extends ConsumerWidget {
   const AccountantExportScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final accountsAsync = ref.watch(_accountsProvider);
+    final accountsAsync = ref.watch(chartOfAccountsProvider);
     final theme = Theme.of(context);
 
     return Scaffold(
