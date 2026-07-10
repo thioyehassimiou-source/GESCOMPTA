@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/database/database.dart';
 import '../../../core/domain/payment_method.dart';
 import '../../../core/format/formatters.dart';
-import '../../stock/presentation/products_screen.dart';
+import '../../stock/application/stock_providers.dart';
+import '../../stock/domain/entities/product.dart';
 import '../application/sale_cart_controller.dart';
 import '../domain/usecases/record_sale.dart';
 
