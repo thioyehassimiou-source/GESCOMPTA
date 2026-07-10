@@ -7,6 +7,22 @@ import 'package:gescompta/core/domain/payment_method.dart';
 import 'package:gescompta/core/providers/database_provider.dart';
 import 'package:gescompta/features/sales/application/sale_cart_controller.dart';
 import 'package:gescompta/features/sales/domain/usecases/record_sale.dart';
+import 'package:gescompta/features/stock/domain/entities/product.dart' as catalog;
+
+/// Vue catalogue du produit seedé « p1 » (ce que le picker fournit au panier).
+catalog.Product _p1() => catalog.Product(
+      id: 'p1',
+      name: 'Huile',
+      reference: null,
+      unit: 'pièce',
+      purchasePrice: 100000,
+      salePrice: 150000,
+      stockQuantity: 10,
+      lowStockThreshold: 0,
+      weightedAverageCost: 100000,
+      isActive: true,
+      createdAt: DateTime(2026),
+    );
 
 void main() {
   late AppDatabase db;
@@ -34,9 +50,7 @@ void main() {
   test('Panier → moteur : la vente est enregistrée et le panier remis à zéro',
       () async {
     final controller = container.read(saleCartControllerProvider.notifier);
-    final product =
-        await (db.select(db.products)..where((t) => t.id.equals('p1')))
-            .getSingle();
+    final product = _p1();
 
     controller.addProduct(product);
     controller.addProduct(product); // 2 unités
@@ -58,9 +72,7 @@ void main() {
 
   test('Vente à crédit sans nom de client : refus', () async {
     final controller = container.read(saleCartControllerProvider.notifier);
-    final product =
-        await (db.select(db.products)..where((t) => t.id.equals('p1')))
-            .getSingle();
+    final product = _p1();
 
     controller.addProduct(product);
     controller.setMethod(PaymentMethod.credit);
@@ -72,9 +84,7 @@ void main() {
 
   test('Vente à crédit avec nom : client créé, créance enregistrée', () async {
     final controller = container.read(saleCartControllerProvider.notifier);
-    final product =
-        await (db.select(db.products)..where((t) => t.id.equals('p1')))
-            .getSingle();
+    final product = _p1();
 
     controller.addProduct(product);
     controller.setMethod(PaymentMethod.credit);

@@ -1,11 +1,7 @@
-import 'package:drift/drift.dart' show OrderingTerm, Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uuid/uuid.dart';
 
-import '../../../core/database/database.dart';
 import '../../../core/format/formatters.dart';
-import '../../../core/providers/database_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -14,13 +10,10 @@ import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_chip.dart';
 import '../../../core/widgets/app_metric_card.dart';
 import '../../../core/widgets/app_table.dart';
-
-final productsStreamProvider = StreamProvider<List<Product>>((ref) {
-  final db = ref.watch(databaseProvider);
-  return (db.select(db.products)
-        ..orderBy([(t) => OrderingTerm(expression: t.name)]))
-      .watch();
-});
+import '../application/stock_providers.dart';
+import '../domain/entities/product.dart';
+import '../domain/entities/product_draft.dart';
+import '../domain/usecases/save_product_result.dart';
 
 enum StockStatus { inStock, reorder, critical, out }
 
@@ -330,17 +323,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
             actionWidget: Text('Voir la liste critique →', style: AppTypography.labelSm.copyWith(color: AppColors.primary)),
           ),
         ),
-        const SizedBox(width: AppSpacing.lg),
-        const Expanded(
-          child: AppMetricCard(
-            title: 'Projection des Ventes (IA)',
-            value: '',
-            description: "Selon les tendances récentes, envisagez d'augmenter le stock des meilleurs articles de 25% pour la demande à venir.",
-            icon: Icons.smart_toy,
-            variant: AppMetricVariant.primary,
-            actionWidget: AppBadge(text: 'Appliquer les suggestions', status: AppChipStatus.neutral),
-          ),
-        ),
+
       ],
     );
   }
@@ -392,39 +375,38 @@ class _ProductDialogState extends ConsumerState<_ProductDialog> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
-    final db = ref.read(databaseProvider);
-    final purchase = int.tryParse(_purchase.text.trim()) ?? 0;
-    final stock = double.tryParse(_stock.text.trim().replaceAll(',', '.')) ?? 0;
-    final threshold = double.tryParse(_threshold.text.trim().replaceAll(',', '.')) ?? 0;
-    final ref0 = _reference.text.trim().isEmpty ? null : _reference.text.trim();
-    final unit = _unit.text.trim().isEmpty ? 'pièce' : _unit.text.trim();
-    final sale = int.tryParse(_sale.text.trim()) ?? 0;
 
-    if (_isEdit) {
-      await (db.update(db.products)..where((t) => t.id.equals(widget.product!.id)))
-          .write(ProductsCompanion(
-        name: Value(_name.text.trim()),
-        reference: Value(ref0),
-        unit: Value(unit),
-        purchasePrice: Value(purchase),
-        salePrice: Value(sale),
-        stockQuantity: Value(stock),
-        lowStockThreshold: Value(threshold),
-      ));
-    } else {
-      await db.into(db.products).insert(ProductsCompanion.insert(
-        id: const Uuid().v4(),
-        name: _name.text.trim(),
-        reference: Value(ref0),
-        unit: Value(unit),
-        purchasePrice: Value(purchase),
-        salePrice: Value(sale),
-        stockQuantity: Value(stock),
-        lowStockThreshold: Value(threshold),
-        weightedAverageCost: Value(purchase.toDouble()),
-      ));
+    final draft = ProductDraft(
+      name: _name.text.trim(),
+      reference: _reference.text.trim().isEmpty ? null : _reference.text.trim(),
+      unit: _unit.text.trim().isEmpty ? 'pièce' : _unit.text.trim(),
+      purchasePrice: int.tryParse(_purchase.text.trim()) ?? 0,
+      salePrice: int.tryParse(_sale.text.trim()) ?? 0,
+      stockQuantity:
+          double.tryParse(_stock.text.trim().replaceAll(',', '.')) ?? 0,
+      lowStockThreshold:
+          double.tryParse(_threshold.text.trim().replaceAll(',', '.')) ?? 0,
+    );
+
+    final result = _isEdit
+        ? await ref
+            .read(updateProductUseCaseProvider)
+            .call(widget.product!.id, draft)
+        : await ref.read(addProductUseCaseProvider).call(draft);
+
+    if (!mounted) return;
+    switch (result) {
+      case SaveProductSuccess():
+        Navigator.of(context).pop();
+      case SaveProductFailure(:final error):
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Theme.of(context).colorScheme.error,
+            content: Text(error.message),
+          ),
+        );
     }
-    if (mounted) Navigator.of(context).pop();
   }
 
   @override

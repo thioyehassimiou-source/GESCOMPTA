@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/database/database.dart';
 import '../../../core/domain/payment_method.dart';
 import '../../../core/format/formatters.dart';
 import '../../../core/theme/app_colors.dart';
@@ -10,7 +9,8 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_chip.dart';
-import '../../stock/presentation/products_screen.dart';
+import '../../stock/application/stock_providers.dart';
+import '../../stock/domain/entities/product.dart';
 import '../application/sale_cart_controller.dart';
 import '../domain/usecases/record_sale.dart';
 
