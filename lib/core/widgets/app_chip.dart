@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 
 enum AppChipStatus { success, warning, error, neutral }
@@ -25,7 +24,7 @@ class AppChip extends StatelessWidget {
 
     switch (status) {
       case AppChipStatus.success:
-        backgroundColor = theme.colorScheme.primaryContainer.withOpacity(0.2);
+        backgroundColor = theme.colorScheme.primaryContainer.withValues(alpha: 0.2);
         textColor = theme.colorScheme.primary;
         dotColor = theme.colorScheme.primary;
         break;
@@ -35,12 +34,12 @@ class AppChip extends StatelessWidget {
         dotColor = theme.colorScheme.tertiary;
         break;
       case AppChipStatus.error:
-        backgroundColor = theme.colorScheme.errorContainer.withOpacity(0.4);
+        backgroundColor = theme.colorScheme.errorContainer.withValues(alpha: 0.4);
         textColor = theme.colorScheme.onErrorContainer;
         dotColor = theme.colorScheme.error;
         break;
       case AppChipStatus.neutral:
-        backgroundColor = theme.colorScheme.surfaceVariant.withOpacity(0.4);
+        backgroundColor = theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4);
         textColor = theme.colorScheme.onSurfaceVariant;
         dotColor = theme.colorScheme.outline;
         break;
@@ -112,7 +111,7 @@ class AppBadge extends StatelessWidget {
         textColor = theme.colorScheme.onErrorContainer;
         break;
       case AppChipStatus.neutral:
-        backgroundColor = theme.colorScheme.surfaceVariant;
+        backgroundColor = theme.colorScheme.surfaceContainerHighest;
         textColor = theme.colorScheme.onSurfaceVariant;
         break;
     }

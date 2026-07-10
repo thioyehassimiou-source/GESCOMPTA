@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import 'app_card.dart';
 
@@ -174,7 +173,7 @@ class AppMetricCard extends StatelessWidget {
                   ],
                 ),
               ),
-            if (actionWidget != null) actionWidget!,
+            ?actionWidget,
           ],
         ],
       ),

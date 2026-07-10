@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 
 class AppTable extends StatelessWidget {
@@ -19,7 +18,7 @@ class AppTable extends StatelessWidget {
     return Theme(
       data: theme.copyWith(
         dataTableTheme: DataTableThemeData(
-          headingRowColor: WidgetStateProperty.all(theme.colorScheme.secondaryContainer.withOpacity(0.5)),
+          headingRowColor: WidgetStateProperty.all(theme.colorScheme.secondaryContainer.withValues(alpha: 0.5)),
           dataRowColor: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.hovered)) {
               return theme.colorScheme.surfaceContainerLow;

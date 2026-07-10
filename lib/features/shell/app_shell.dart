@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../core/theme/app_colors.dart';
 import 'widgets/app_sidebar.dart';
 import 'widgets/app_header.dart';
 

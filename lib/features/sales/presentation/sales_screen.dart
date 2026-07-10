@@ -4,6 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/database/database.dart';
 import '../../../core/domain/payment_method.dart';
 import '../../../core/format/formatters.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/app_button.dart';
+import '../../../core/widgets/app_card.dart';
+import '../../../core/widgets/app_chip.dart';
 import '../../stock/presentation/products_screen.dart';
 import '../application/sale_cart_controller.dart';
 import '../domain/usecases/record_sale.dart';
@@ -16,13 +22,13 @@ class SalesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return const Padding(
-      padding: EdgeInsets.all(16),
+      padding: EdgeInsets.all(AppSpacing.lg),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Expanded(flex: 3, child: _ProductPicker()),
-          SizedBox(width: 16),
-          Expanded(flex: 2, child: _CartPanel()),
+          SizedBox(width: AppSpacing.lg),
+          SizedBox(width: 360, child: _CartPanel()),
         ],
       ),
     );
@@ -45,30 +51,64 @@ class _ProductPickerState extends ConsumerState<_ProductPicker> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final productsAsync = ref.watch(productsStreamProvider);
+    final cartLines = ref.watch(saleCartControllerProvider).lines;
+
+    // Map productId → quantité dans le panier pour les badges
+    final cartQty = {for (final l in cartLines) l.productId: l.quantity};
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Vendre', style: theme.textTheme.headlineSmall),
-        const SizedBox(height: 4),
-        Text('Touchez un produit pour l\'ajouter à la vente.',
-            style: theme.textTheme.bodyMedium
-                ?.copyWith(color: theme.colorScheme.outline)),
-        const SizedBox(height: 12),
-        TextField(
-          decoration: const InputDecoration(
-            prefixIcon: Icon(Icons.search),
-            hintText: 'Rechercher un produit…',
-            border: OutlineInputBorder(),
-            isDense: true,
-          ),
-          onChanged: (v) => setState(() => _query = v.trim().toLowerCase()),
+        // ── En-tête ──
+        Row(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Vendre', style: AppTypography.headlineMd),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'Touchez un produit pour l\'ajouter à la vente.',
+                  style: AppTypography.bodySm
+                      .copyWith(color: AppColors.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.md),
+
+        // ── Barre de recherche ──
+        AppCard(
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+          child: TextField(
+            decoration: InputDecoration(
+              prefixIcon: Icon(Icons.search,
+                  color: theme.colorScheme.onSurfaceVariant, size: 20),
+              hintText: 'Rechercher un produit…',
+              hintStyle: AppTypography.bodySm
+                  .copyWith(color: AppColors.onSurfaceVariant),
+              border: InputBorder.none,
+              isDense: true,
+              contentPadding:
+                  const EdgeInsets.symmetric(vertical: AppSpacing.base),
+            ),
+            style: AppTypography.bodySm,
+            onChanged: (v) => setState(() => _query = v.trim().toLowerCase()),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+
+        // ── Grille produits ──
         Expanded(
           child: productsAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('Erreur : $e')),
+            error: (e, _) => Center(
+              child: Text('Erreur : $e',
+                  style:
+                      AppTypography.bodySm.copyWith(color: AppColors.error)),
+            ),
             data: (products) {
               final visible = products
                   .where((p) =>
@@ -78,24 +118,39 @@ class _ProductPickerState extends ConsumerState<_ProductPicker> {
                   .toList();
               if (visible.isEmpty) {
                 return Center(
-                  child: Text(
-                    products.isEmpty
-                        ? 'Aucun produit. Ajoutez-en dans « Mes produits ».'
-                        : 'Aucun produit ne correspond.',
-                    style: TextStyle(color: theme.colorScheme.outline),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.inventory_2_outlined,
+                          size: 48,
+                          color: theme.colorScheme.onSurfaceVariant
+                              .withValues(alpha: 0.4)),
+                      const SizedBox(height: AppSpacing.md),
+                      Text(
+                        products.isEmpty
+                            ? 'Aucun produit.\nAjoutez-en dans « Mes produits ».'
+                            : 'Aucun produit ne correspond à « $_query ».',
+                        textAlign: TextAlign.center,
+                        style: AppTypography.bodySm
+                            .copyWith(color: AppColors.onSurfaceVariant),
+                      ),
+                    ],
                   ),
                 );
               }
               return GridView.builder(
                 gridDelegate:
                     const SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: 220,
-                  mainAxisExtent: 96,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
+                  maxCrossAxisExtent: 200,
+                  mainAxisExtent: 110,
+                  crossAxisSpacing: AppSpacing.md,
+                  mainAxisSpacing: AppSpacing.md,
                 ),
                 itemCount: visible.length,
-                itemBuilder: (_, i) => _ProductTile(product: visible[i]),
+                itemBuilder: (_, i) => _ProductTile(
+                  product: visible[i],
+                  cartQuantity: cartQty[visible[i].id] ?? 0,
+                ),
               );
             },
           ),
@@ -105,57 +160,103 @@ class _ProductPickerState extends ConsumerState<_ProductPicker> {
   }
 }
 
+// ─────────────────────────── Tuile produit ───────────────────────────
+
 class _ProductTile extends ConsumerWidget {
-  const _ProductTile({required this.product});
+  const _ProductTile({required this.product, required this.cartQuantity});
 
   final Product product;
+  final double cartQuantity;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final outOfStock = product.stockQuantity <= 0;
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: theme.dividerColor),
-      ),
-      child: InkWell(
-        onTap: outOfStock
-            ? null
-            : () =>
-                ref.read(saleCartControllerProvider.notifier).addProduct(product),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
+    final inCart = cartQuantity > 0;
+
+    AppChipStatus chipStatus;
+    String chipLabel;
+    if (outOfStock) {
+      chipStatus = AppChipStatus.neutral;
+      chipLabel = 'Rupture';
+    } else if (product.stockQuantity <= (product.lowStockThreshold > 0
+        ? product.lowStockThreshold
+        : 3)) {
+      chipStatus = AppChipStatus.warning;
+      chipLabel = 'Stock bas';
+    } else {
+      chipStatus = AppChipStatus.success;
+      chipLabel = 'En stock';
+    }
+
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      onTap: outOfStock
+          ? null
+          : () => ref
+              .read(saleCartControllerProvider.notifier)
+              .addProduct(product),
+      hoverBorder: !outOfStock,
+      child: Stack(
+        children: [
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(product.name,
+              // Nom produit
+              Expanded(
+                child: Text(
+                  product.name,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleSmall),
+                  style: AppTypography.labelMd.copyWith(
+                    color: outOfStock
+                        ? AppColors.onSurfaceVariant
+                        : AppColors.onSurface,
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              // Prix + statut
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text(formatGnf(product.salePrice),
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.primary)),
                   Text(
-                    outOfStock
-                        ? 'rupture'
-                        : '${formatQuantity(product.stockQuantity)} ${product.unit}',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                        color: outOfStock
-                            ? theme.colorScheme.error
-                            : theme.colorScheme.outline),
+                    formatGnf(product.salePrice),
+                    style: AppTypography.labelMd.copyWith(
+                      color: outOfStock
+                          ? AppColors.onSurfaceVariant
+                          : AppColors.primary,
+                    ),
                   ),
+                  AppChip(label: chipLabel, status: chipStatus),
                 ],
               ),
             ],
           ),
-        ),
+          // Badge panier (quantité en cours)
+          if (inCart)
+            Positioned(
+              top: 0,
+              right: 0,
+              child: Container(
+                width: 22,
+                height: 22,
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  formatQuantity(cartQuantity),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.onPrimary,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -172,81 +273,182 @@ class _CartPanel extends ConsumerWidget {
     final state = ref.watch(saleCartControllerProvider);
     final controller = ref.read(saleCartControllerProvider.notifier);
 
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.shopping_cart_outlined),
-                const SizedBox(width: 8),
-                Text('Vente en cours', style: theme.textTheme.titleMedium),
-                const Spacer(),
-                if (!state.isEmpty)
-                  TextButton(
-                    onPressed: controller.clear,
-                    child: const Text('Vider'),
-                  ),
-              ],
-            ),
-            const Divider(),
-            Expanded(
-              child: state.isEmpty
-                  ? Center(
-                      child: Text('Panier vide',
-                          style:
-                              TextStyle(color: theme.colorScheme.outline)),
-                    )
-                  : ListView.builder(
-                      itemCount: state.lines.length,
-                      itemBuilder: (_, i) => _CartLineTile(index: i),
+    return AppCard(
+      padding: EdgeInsets.zero,
+      clip: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ── En-tête panier ──
+          _CartHeader(isEmpty: state.isEmpty, onClear: controller.clear),
+
+          // ── Lignes ──
+          Expanded(
+            child: state.isEmpty
+                ? _EmptyCartPlaceholder()
+                : ListView.separated(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.base),
+                    itemCount: state.lines.length,
+                    separatorBuilder: (_, i) => Divider(
+                      height: 1,
+                      color: theme.colorScheme.outlineVariant,
+                      indent: AppSpacing.md,
+                      endIndent: AppSpacing.md,
                     ),
+                    itemBuilder: (_, i) => _CartLineTile(index: i),
+                  ),
+          ),
+
+          // ── Pied : paiement + total + bouton ──
+          Container(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerLow,
+              border: Border(
+                top: BorderSide(color: theme.colorScheme.outlineVariant),
+              ),
             ),
-            const Divider(),
-            _PaymentSelector(state: state, controller: controller),
-            const SizedBox(height: 8),
-            Row(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('Total', style: theme.textTheme.titleMedium),
-                const Spacer(),
-                Text(formatGnf(state.total),
-                    style: theme.textTheme.headlineSmall
-                        ?.copyWith(fontWeight: FontWeight.bold)),
+                _PaymentSelector(state: state, controller: controller),
+                const SizedBox(height: AppSpacing.md),
+
+                // Total
+                Row(
+                  children: [
+                    Text('Total',
+                        style: AppTypography.labelMd
+                            .copyWith(color: AppColors.onSurfaceVariant)),
+                    const Spacer(),
+                    Text(
+                      formatGnf(state.total),
+                      style: AppTypography.headlineMd
+                          .copyWith(color: AppColors.primary),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+
+                // Avertissement stock
+                if (state.hasStockIssue) ...[
+                  const AppChip(
+                    label: 'Quantité insuffisante en stock',
+                    status: AppChipStatus.error,
+                  ),
+                  const SizedBox(height: AppSpacing.base),
+                ],
+
+                // Bouton enregistrer
+                _SubmitButton(state: state),
               ],
             ),
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed:
-                  state.isEmpty || state.submitting || state.hasStockIssue
-                      ? null
-                      : () => _submit(context, ref),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 18),
-              ),
-              icon: state.submitting
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.check_circle_outline),
-              label: Text(state.submitting
-                  ? 'Enregistrement…'
-                  : 'Enregistrer la vente'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── En-tête du panneau panier ──
+class _CartHeader extends StatelessWidget {
+  const _CartHeader({required this.isEmpty, required this.onClear});
+
+  final bool isEmpty;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLowest,
+        border: Border(
+          bottom: BorderSide(color: theme.colorScheme.outlineVariant),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.primaryContainer.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
-            if (state.hasStockIssue)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  'Une quantité dépasse le stock disponible.',
-                  style: TextStyle(color: theme.colorScheme.error),
-                  textAlign: TextAlign.center,
-                ),
-              ),
+            child: const Icon(Icons.shopping_cart_outlined,
+                size: 18, color: AppColors.primary),
+          ),
+          const SizedBox(width: AppSpacing.base),
+          Expanded(
+            child: Text('Vente en cours',
+                style: AppTypography.labelMd),
+          ),
+          if (!isEmpty)
+            AppButton.secondary(
+              label: 'Vider',
+              icon: Icons.delete_outline,
+              onPressed: onClear,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── État vide ──
+class _EmptyCartPlaceholder extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.shopping_cart_outlined,
+              size: 56,
+              color: AppColors.outlineVariant,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              'Panier vide',
+              style: AppTypography.labelMd
+                  .copyWith(color: AppColors.onSurfaceVariant),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              'Cliquez sur un produit à gauche\npour l\'ajouter.',
+              textAlign: TextAlign.center,
+              style: AppTypography.bodySm
+                  .copyWith(color: AppColors.outlineVariant),
+            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ── Bouton enregistrer ──
+class _SubmitButton extends ConsumerWidget {
+  const _SubmitButton({required this.state});
+  final SaleCartState state;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final disabled = state.isEmpty || state.submitting || state.hasStockIssue;
+
+    return SizedBox(
+      width: double.infinity,
+      child: AppButton(
+        icon: state.submitting ? null : Icons.check_circle_outline,
+        label: state.submitting ? 'Enregistrement…' : 'Enregistrer la vente',
+        onPressed: disabled ? null : () => _submit(context, ref),
       ),
     );
   }
@@ -260,22 +462,33 @@ class _CartPanel extends ConsumerWidget {
     switch (result) {
       case RecordSaleSuccess(:final sale):
         messenger.showSnackBar(SnackBar(
-          backgroundColor: Colors.green.shade700,
+          backgroundColor: AppColors.primaryContainer,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
           content: Text(
             sale.isCredit
-                ? '✅ Vente enregistrée (${sale.reference}) — '
-                    'crédit de ${formatGnf(sale.creditAmount)} noté.'
-                : '✅ Vente enregistrée avec succès (${sale.reference}).',
+                ? '✅ Vente (${sale.reference}) — crédit de ${formatGnf(sale.creditAmount)} noté.'
+                : '✅ Vente enregistrée (${sale.reference}).',
+            style: AppTypography.bodySm.copyWith(color: AppColors.onPrimaryContainer),
           ),
         ));
       case RecordSaleFailure(:final error):
         messenger.showSnackBar(SnackBar(
-          backgroundColor: Theme.of(context).colorScheme.error,
-          content: Text(error.message),
+          backgroundColor: AppColors.errorContainer,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
+          content: Text(
+            error.message,
+            style: AppTypography.bodySm.copyWith(color: AppColors.onErrorContainer),
+          ),
         ));
     }
   }
 }
+
+// ─────────────────────────── Ligne de panier ───────────────────────────
 
 class _CartLineTile extends ConsumerWidget {
   const _CartLineTile({required this.index});
@@ -287,46 +500,72 @@ class _CartLineTile extends ConsumerWidget {
     final theme = Theme.of(context);
     final line = ref.watch(saleCartControllerProvider).lines[index];
     final controller = ref.read(saleCartControllerProvider.notifier);
+    final hasIssue = line.exceedsStock;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: AppSpacing.base),
       child: Row(
         children: [
+          // Icône produit
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainer,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+            ),
+            child: Icon(Icons.inventory_2_outlined,
+                size: 16,
+                color: hasIssue
+                    ? theme.colorScheme.error
+                    : theme.colorScheme.primary),
+          ),
+          const SizedBox(width: AppSpacing.base),
+
+          // Nom + prix unitaire
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(line.name,
-                    maxLines: 1, overflow: TextOverflow.ellipsis),
                 Text(
-                  '${formatGnf(line.unitPrice)} × ${formatQuantity(line.quantity)} ${line.unit}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: line.exceedsStock
+                  line.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.labelMd,
+                ),
+                Text(
+                  '${formatGnf(line.unitPrice)} / ${line.unit}',
+                  style: AppTypography.labelSm.copyWith(
+                    color: hasIssue
                         ? theme.colorScheme.error
-                        : theme.colorScheme.outline,
+                        : AppColors.onSurfaceVariant,
                   ),
                 ),
               ],
             ),
           ),
-          IconButton(
-            visualDensity: VisualDensity.compact,
-            icon: const Icon(Icons.remove_circle_outline),
-            onPressed: () =>
+
+          // Contrôles quantité
+          _QuantityControl(
+            quantity: line.quantity,
+            available: line.availableStock,
+            onDecrement: () =>
                 controller.setQuantity(index, line.quantity - 1),
-          ),
-          Text(formatQuantity(line.quantity)),
-          IconButton(
-            visualDensity: VisualDensity.compact,
-            icon: const Icon(Icons.add_circle_outline),
-            onPressed: () =>
+            onIncrement: () =>
                 controller.setQuantity(index, line.quantity + 1),
           ),
+
+          // Sous-total
           SizedBox(
-            width: 96,
-            child: Text(formatGnf(line.lineTotal),
-                textAlign: TextAlign.right,
-                style: const TextStyle(fontWeight: FontWeight.bold)),
+            width: 90,
+            child: Text(
+              formatAmount(line.lineTotal),
+              textAlign: TextAlign.right,
+              style: AppTypography.labelMd.copyWith(
+                color: hasIssue ? AppColors.error : AppColors.primary,
+              ),
+            ),
           ),
         ],
       ),
@@ -334,17 +573,87 @@ class _CartLineTile extends ConsumerWidget {
   }
 }
 
+class _QuantityControl extends StatelessWidget {
+  const _QuantityControl({
+    required this.quantity,
+    required this.available,
+    required this.onDecrement,
+    required this.onIncrement,
+  });
+
+  final double quantity;
+  final double available;
+  final VoidCallback onDecrement;
+  final VoidCallback onIncrement;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final atMax = quantity >= available;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _QtyBtn(icon: Icons.remove, onTap: onDecrement),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: Text(
+              formatQuantity(quantity),
+              style: AppTypography.labelMd,
+            ),
+          ),
+          _QtyBtn(
+              icon: Icons.add,
+              onTap: atMax ? null : onIncrement,
+              disabled: atMax),
+        ],
+      ),
+    );
+  }
+}
+
+class _QtyBtn extends StatelessWidget {
+  const _QtyBtn({required this.icon, this.onTap, this.disabled = false});
+  final IconData icon;
+  final VoidCallback? onTap;
+  final bool disabled;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.lg),
+      child: Padding(
+        padding: const EdgeInsets.all(6),
+        child: Icon(icon,
+            size: 16,
+            color: disabled
+                ? AppColors.outlineVariant
+                : AppColors.onSurface),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────── Sélecteur de paiement ───────────────────────────
+
 class _PaymentSelector extends StatelessWidget {
   const _PaymentSelector({required this.state, required this.controller});
 
   final SaleCartState state;
   final SaleCartController controller;
 
-  static const _labels = {
-    PaymentMethod.cash: 'Espèces',
-    PaymentMethod.mobileMoney: 'Mobile Money',
-    PaymentMethod.bank: 'Banque',
-    PaymentMethod.credit: 'Crédit',
+  static const _methods = {
+    PaymentMethod.cash: (Icons.payments_outlined, 'Espèces'),
+    PaymentMethod.mobileMoney: (Icons.phone_android_outlined, 'Mobile Money'),
+    PaymentMethod.bank: (Icons.account_balance_outlined, 'Banque'),
+    PaymentMethod.credit: (Icons.schedule_outlined, 'Crédit'),
   };
 
   @override
@@ -352,33 +661,90 @@ class _PaymentSelector extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Paiement', style: Theme.of(context).textTheme.labelLarge),
-        const SizedBox(height: 6),
+        Text('Mode de paiement',
+            style:
+                AppTypography.labelSm.copyWith(color: AppColors.onSurfaceVariant)),
+        const SizedBox(height: AppSpacing.base),
         Wrap(
-          spacing: 8,
+          spacing: AppSpacing.base,
+          runSpacing: AppSpacing.base,
           children: [
-            for (final entry in _labels.entries)
-              ChoiceChip(
-                label: Text(entry.value),
+            for (final entry in _methods.entries)
+              _PaymentChip(
+                icon: entry.value.$1,
+                label: entry.value.$2,
                 selected: state.method == entry.key,
-                onSelected: (_) => controller.setMethod(entry.key),
+                onTap: () => controller.setMethod(entry.key),
               ),
           ],
         ),
-        if (state.isCredit)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: TextField(
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.person_outline),
-                labelText: 'Nom du client (crédit)',
-                border: OutlineInputBorder(),
-                isDense: true,
+        if (state.isCredit) ...[
+          const SizedBox(height: AppSpacing.base),
+          TextField(
+            decoration: InputDecoration(
+              prefixIcon: const Icon(Icons.person_outline, size: 18),
+              labelText: 'Nom du client',
+              hintText: 'Ex : Mamadou Diallo',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.lg),
               ),
-              onChanged: controller.setCustomerName,
+              isDense: true,
             ),
+            style: AppTypography.bodySm,
+            onChanged: controller.setCustomerName,
           ),
+        ],
       ],
+    );
+  }
+}
+
+class _PaymentChip extends StatelessWidget {
+  const _PaymentChip({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.base, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary : AppColors.surfaceContainer,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(
+            color: selected ? AppColors.primary : AppColors.outlineVariant,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon,
+                size: 14,
+                color:
+                    selected ? AppColors.onPrimary : AppColors.onSurfaceVariant),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: AppTypography.labelSm.copyWith(
+                color:
+                    selected ? AppColors.onPrimary : AppColors.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

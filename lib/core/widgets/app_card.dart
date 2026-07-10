@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 
 /// Carte de base de la charte : fond clair, bord fin, coins arrondis (12) et
