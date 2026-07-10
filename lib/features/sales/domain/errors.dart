@@ -90,6 +90,19 @@ class UnexpectedSaleError extends SaleError {
       'Aucune donnée n\'a été modifiée.';
 }
 
+/// Garde-fou d'intégrité : une pièce comptable générée n'est pas équilibrée
+/// (Σ débits ≠ Σ crédits). Ne devrait jamais survenir ; si c'est le cas, la
+/// transaction est annulée pour ne jamais déséquilibrer les livres.
+class UnbalancedEntryError extends SaleError {
+  const UnbalancedEntryError({required this.totalDebit, required this.totalCredit});
+  final int totalDebit;
+  final int totalCredit;
+  @override
+  String get message =>
+      'Une erreur est survenue, la vente n\'a pas été enregistrée. '
+      'Aucune donnée n\'a été modifiée.';
+}
+
 /// Exception interne servant à déclencher le ROLLBACK de la transaction Drift.
 /// Portée strictement au domaine ; le use-case la retraduit en [SaleError].
 class SaleDomainException implements Exception {

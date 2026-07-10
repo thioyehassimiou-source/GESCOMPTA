@@ -146,6 +146,14 @@ class DriftSaleService implements SaleService {
         costOfGoodsSold: costOfGoods,
       ));
       for (final entry in entries) {
+        // Garde-fou : jamais persister une pièce déséquilibrée (partie double).
+        // Un bug de la politique de génération annule toute la transaction.
+        if (!entry.isBalanced) {
+          throw SaleDomainException(UnbalancedEntryError(
+            totalDebit: entry.totalDebit,
+            totalCredit: entry.totalCredit,
+          ));
+        }
         await _accounting.postEntry(entry);
       }
 
