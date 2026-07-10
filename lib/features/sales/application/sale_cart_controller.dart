@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/database.dart';
 import '../../../core/domain/payment_method.dart';
-import '../../business/presentation/business_summary_screen.dart';
+import '../../business/application/business_providers.dart';
 import '../../dashboard/application/dashboard_providers.dart';
 import '../domain/entities/sale_draft.dart';
 import '../domain/errors.dart';

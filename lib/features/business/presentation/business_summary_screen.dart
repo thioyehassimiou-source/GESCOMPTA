@@ -3,63 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/format/formatters.dart';
-import '../../../core/providers/database_provider.dart';
-
-/// Résumé du commerce en langage simple. Aucune notion comptable :
-/// pas de balance, pas de comptes, pas de débit/crédit.
-class BusinessSummary {
-  const BusinessSummary({
-    required this.monthSales,
-    required this.monthProfit,
-    required this.owedToMe,
-    required this.cashCollectedThisMonth,
-  });
-
-  final int monthSales; // ventes du mois (GNF)
-  final int monthProfit; // bénéfice estimé du mois (GNF)
-  final int owedToMe; // ce que les clients me doivent (GNF)
-  final int cashCollectedThisMonth; // argent réellement encaissé ce mois (GNF)
-}
-
-final businessSummaryProvider = FutureProvider<BusinessSummary>((ref) async {
-  final db = ref.watch(databaseProvider);
-  final now = DateTime.now();
-  final startOfMonth = DateTime(now.year, now.month);
-
-  final sales = await db.select(db.sales).get();
-  final items = await db.select(db.saleItems).get();
-
-  final monthSaleIds = sales
-      .where((s) => !s.date.isBefore(startOfMonth))
-      .map((s) => s.id)
-      .toSet();
-
-  var monthSales = 0;
-  var cashCollected = 0;
-  for (final s in sales) {
-    if (monthSaleIds.contains(s.id)) {
-      monthSales += s.totalAmount;
-      cashCollected += s.amountPaid;
-    }
-  }
-
-  var monthProfit = 0;
-  for (final it in items) {
-    if (monthSaleIds.contains(it.saleId)) {
-      monthProfit += it.lineTotal - (it.unitCost * it.quantity).round();
-    }
-  }
-
-  final owedToMe =
-      sales.fold<int>(0, (sum, s) => sum + (s.totalAmount - s.amountPaid));
-
-  return BusinessSummary(
-    monthSales: monthSales,
-    monthProfit: monthProfit,
-    owedToMe: owedToMe,
-    cashCollectedThisMonth: cashCollected,
-  );
-});
+import '../application/business_providers.dart';
 
 class BusinessSummaryScreen extends ConsumerWidget {
   const BusinessSummaryScreen({super.key});
