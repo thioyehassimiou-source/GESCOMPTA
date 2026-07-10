@@ -44,13 +44,39 @@ class AppTheme {
     return _base(scheme);
   }
 
-  /// Thème sombre : conservé pour compatibilité. La charte actuelle cible le
-  /// mode clair ; on dérive un schéma sombre cohérent en attendant des
-  /// maquettes dédiées.
+  /// Thème sombre : palette gris profond/SaaS moderne.
   static ThemeData dark() {
-    final scheme = ColorScheme.fromSeed(
-      seedColor: AppColors.primary,
+    const scheme = ColorScheme(
       brightness: Brightness.dark,
+      primary: AppColors.primary,
+      onPrimary: AppColors.onPrimary,
+      primaryContainer: AppColors.primaryContainer,
+      onPrimaryContainer: AppColors.onPrimaryContainer,
+      secondary: AppColors.secondary,
+      onSecondary: AppColors.onSecondary,
+      secondaryContainer: Color(0xFF334155), // gris ardoise
+      onSecondaryContainer: Color(0xFFF8FAFC),
+      tertiary: AppColors.tertiary,
+      onTertiary: AppColors.onPrimary,
+      tertiaryContainer: AppColors.tertiaryContainer,
+      onTertiaryContainer: AppColors.tertiaryFixed,
+      error: AppColors.error,
+      onError: AppColors.onError,
+      errorContainer: Color(0xFF7F1D1D),
+      onErrorContainer: Color(0xFFFEF2F2),
+      surface: Color(0xFF0F172A), // Tailwind Slate 900
+      onSurface: Color(0xFFF8FAFC),
+      onSurfaceVariant: Color(0xFF94A3B8), // Slate 400
+      surfaceContainerLowest: Color(0xFF1E293B), // Slate 800 (pour les cartes)
+      surfaceContainerLow: Color(0xFF334155), // Slate 700
+      surfaceContainer: Color(0xFF475569), // Slate 600
+      surfaceContainerHigh: Color(0xFF64748B), // Slate 500
+      surfaceContainerHighest: Color(0xFF94A3B8),
+      outline: Color(0xFF475569),
+      outlineVariant: Color(0xFF334155),
+      inverseSurface: Color(0xFFF8FAFC),
+      onInverseSurface: Color(0xFF0F172A),
+      inversePrimary: AppColors.inversePrimary,
     );
     return _base(scheme);
   }

@@ -8,12 +8,12 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/app_card.dart';
-import '../../../core/widgets/metric_card.dart';
-import '../../../core/widgets/status_pill.dart';
+import '../../../core/widgets/app_metric_card.dart';
+import '../../../core/widgets/app_chip.dart';
+import '../../../core/widgets/app_table.dart';
+import '../../../core/widgets/app_button.dart';
 import '../application/dashboard_providers.dart';
 
-/// Écran Accueil — fidèle à la maquette (« Today's Business Story »), en
-/// français et branché aux vraies données. Zéro jargon comptable.
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
@@ -97,7 +97,7 @@ class _Header extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Votre activité aujourd\'hui',
+              Text('Tableau de bord',
                   style: AppTypography.displayLg),
               const SizedBox(height: AppSpacing.xs),
               Text(
@@ -110,13 +110,10 @@ class _Header extends StatelessWidget {
           ),
         ),
         const SizedBox(width: AppSpacing.md),
-        FilledButton.icon(
+        AppButton(
           onPressed: () => context.go('/vendre'),
-          icon: const Icon(Icons.add_shopping_cart),
-          label: const Text('Nouvelle vente'),
-          style: FilledButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-          ),
+          icon: Icons.add_shopping_cart,
+          label: 'Nouvelle vente',
         ),
       ],
     );
@@ -141,63 +138,46 @@ class _MetricsGrid extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 260,
-        mainAxisExtent: 138,
+        mainAxisExtent: 180,
         crossAxisSpacing: AppSpacing.lg,
         mainAxisSpacing: AppSpacing.lg,
       ),
       children: [
-        MetricCard(
-          label: 'Ventes du jour',
+        AppMetricCard(
+          title: 'Ventes du jour',
           value: formatGnfCompact(data.todaySales),
           icon: Icons.trending_up,
-          valueColor: AppColors.primary,
-          trendText: _pct(data.salesGrowth),
-          trendColor: (data.salesGrowth ?? 0) >= 0
-              ? AppColors.primary
-              : AppColors.error,
-          trendHint: 'vs hier',
+          variant: AppMetricVariant.primary,
+          description: 'vs hier : ${_pct(data.salesGrowth)}',
         ),
-        MetricCard(
-          label: 'Bénéfice du jour',
+        AppMetricCard(
+          title: 'Bénéfice du jour',
           value: formatGnfCompact(data.todayProfit),
           icon: Icons.monetization_on,
-          valueColor: AppColors.primary,
+          variant: AppMetricVariant.standard,
           trendText: _pct(data.profitGrowth),
-          trendColor: (data.profitGrowth ?? 0) >= 0
-              ? AppColors.primary
-              : AppColors.error,
-          trendHint: 'marge',
         ),
-        MetricCard(
-          label: 'On me doit',
+        AppMetricCard(
+          title: 'On me doit',
           value: formatGnfCompact(data.owed),
           icon: Icons.history,
-          iconColor: AppColors.error,
-          iconBackground: AppColors.errorContainer,
+          variant: AppMetricVariant.error,
           trendText: '${data.owedCount} en attente',
-          trendColor: AppColors.error,
-          trendHint: 'à recouvrer',
         ),
-        MetricCard(
-          label: 'Argent disponible',
+        AppMetricCard(
+          title: 'Argent disponible',
           value: formatGnfCompact(data.cashAvailable),
           icon: Icons.account_balance_wallet,
-          iconColor: AppColors.secondary,
-          iconBackground: AppColors.secondaryContainer,
+          variant: AppMetricVariant.standard,
           trendText: data.cashAvailable >= 0 ? 'Sain' : 'Négatif',
-          trendColor: data.cashAvailable >= 0
-              ? AppColors.primary
-              : AppColors.error,
-          trendHint: 'trésorerie',
         ),
-        MetricCard(
-          label: 'Stock faible',
-          value: '${data.lowStock.length} article(s)',
+        AppMetricCard(
+          title: 'Stock faible',
+          value: '${data.lowStock.length}',
+          suffix: 'articles',
           icon: Icons.inventory,
-          iconColor: AppColors.onTertiaryFixedVariant,
-          iconBackground: AppColors.tertiaryFixed,
+          variant: data.lowStock.isEmpty ? AppMetricVariant.standard : AppMetricVariant.error,
           trendText: data.lowStock.isEmpty ? 'Tout va bien' : 'Action requise',
-          trendColor: AppColors.onTertiaryFixedVariant,
         ),
       ],
     );
@@ -213,9 +193,9 @@ class _RecentSalesCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return AppCard(
       padding: EdgeInsets.zero,
-      clip: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -224,17 +204,14 @@ class _RecentSalesCard extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Ventes récentes', style: AppTypography.headlineMd),
-                InkWell(
-                  onTap: () => context.go('/mon-commerce'),
-                  child: Text('Voir tout',
-                      style: AppTypography.labelMd
-                          .copyWith(color: AppColors.primary)),
+                Text('Ventes récentes', style: theme.textTheme.titleMedium),
+                AppButton.secondary(
+                  onPressed: () => context.go('/mon-commerce'),
+                  label: 'Voir tout',
                 ),
               ],
             ),
           ),
-          const _TableHeader(),
           if (sales.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 48),
@@ -244,113 +221,57 @@ class _RecentSalesCard extends StatelessWidget {
               ),
             )
           else
-            for (var i = 0; i < sales.length; i++) ...[
-              if (i > 0)
-                const Divider(height: 1, color: AppColors.surfaceContainer),
-              _SaleRow(sale: sales[i]),
-            ],
-        ],
-      ),
-    );
-  }
-}
-
-class _TableHeader extends StatelessWidget {
-  const _TableHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    Widget cell(String t, {TextAlign align = TextAlign.left}) => Text(
-          t.toUpperCase(),
-          textAlign: align,
-          style: AppTypography.labelSm.copyWith(
-              color: AppColors.onSecondaryContainer, letterSpacing: 0.5),
-        );
-    return Container(
-      color: AppColors.secondaryContainer.withValues(alpha: .3),
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
-      child: Row(
-        children: [
-          Expanded(flex: 4, child: cell('Article / Client')),
-          Expanded(flex: 2, child: cell('Heure')),
-          Expanded(flex: 3, child: cell('Montant')),
-          Expanded(
-              flex: 2, child: cell('Statut', align: TextAlign.right)),
-        ],
-      ),
-    );
-  }
-}
-
-class _SaleRow extends StatelessWidget {
-  const _SaleRow({required this.sale});
-
-  final RecentSaleView sale;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg, vertical: AppSpacing.md),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 4,
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceContainer,
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                  ),
-                  child: Icon(sale.icon, color: AppColors.primary, size: 20),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(sale.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTypography.labelMd
-                              .copyWith(fontWeight: FontWeight.w700)),
-                      Text(sale.subtitle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.onSurfaceVariant)),
-                    ],
-                  ),
-                ),
+            AppTable(
+              columns: const [
+                DataColumn(label: Text('CLIENT / ARTICLE')),
+                DataColumn(label: Text('HEURE')),
+                DataColumn(label: Text('MONTANT')),
+                DataColumn(label: Text('STATUT')),
               ],
+              rows: sales.map((sale) => DataRow(
+                cells: [
+                  DataCell(
+                    Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainer,
+                            borderRadius: BorderRadius.circular(AppRadius.lg),
+                          ),
+                          child: Icon(sale.icon, color: theme.colorScheme.primary, size: 20),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(sale.title,
+                                style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700)),
+                            Text(sale.subtitle,
+                                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  DataCell(
+                    Text(formatRelativeDay(sale.date),
+                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                  ),
+                  DataCell(
+                    Text(formatGnf(sale.amount),
+                        style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.primary, fontWeight: FontWeight.w700)),
+                  ),
+                  DataCell(
+                    sale.paid
+                        ? const AppChip(label: 'Payé', status: AppChipStatus.success)
+                        : const AppChip(label: 'Crédit', status: AppChipStatus.error),
+                  ),
+                ],
+              )).toList(),
             ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(formatRelativeDay(sale.date),
-                style: AppTypography.bodySm
-                    .copyWith(color: AppColors.onSurfaceVariant)),
-          ),
-          Expanded(
-            flex: 3,
-            child: Text(formatGnf(sale.amount),
-                style: AppTypography.labelMd.copyWith(
-                    color: AppColors.primary, fontWeight: FontWeight.w700)),
-          ),
-          Expanded(
-            flex: 2,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: sale.paid
-                  ? const StatusPill.paid()
-                  : const StatusPill.credit(),
-            ),
-          ),
         ],
       ),
     );
@@ -372,8 +293,6 @@ class _Sidebar extends StatelessWidget {
         _WeeklyGrowthCard(growth: data.weeklyGrowth),
         const SizedBox(height: AppSpacing.lg),
         _RestockCard(products: data.lowStock),
-        const SizedBox(height: AppSpacing.lg),
-        _AiTipCard(bestSeller: data.bestSeller),
       ],
     );
   }
@@ -386,6 +305,7 @@ class _WeeklyGrowthCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final label = growth == null
         ? '—'
         : '${growth! >= 0 ? '+' : ''}${growth!.toStringAsFixed(1)} %';
@@ -393,23 +313,27 @@ class _WeeklyGrowthCard extends StatelessWidget {
       height: 192,
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.primary,
+        gradient: LinearGradient(
+          colors: [theme.colorScheme.primary, theme.colorScheme.primary.withValues(alpha: 0.8)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(AppRadius.xl),
         boxShadow: const [
           BoxShadow(
-              color: Color(0x1A101828), offset: Offset(0, 2), blurRadius: 8),
+              color: Color(0x20000000), offset: Offset(0, 4), blurRadius: 12),
         ],
       ),
       child: Stack(
         children: [
           Positioned(
-            bottom: 0,
+            bottom: -20,
             left: 0,
             right: 0,
             child: Opacity(
-              opacity: .3,
+              opacity: .2,
               child: CustomPaint(
-                size: const Size(double.infinity, 60),
+                size: const Size(double.infinity, 80),
                 painter: _WavePainter(),
               ),
             ),
@@ -422,12 +346,12 @@ class _WeeklyGrowthCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Croissance de la semaine',
-                      style: AppTypography.labelSm.copyWith(
-                          color: AppColors.onPrimary.withValues(alpha: .8))),
+                      style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.onPrimary.withValues(alpha: 0.8))),
                   const SizedBox(height: AppSpacing.xs),
                   Text(label,
-                      style: AppTypography.headlineMd
-                          .copyWith(color: AppColors.onPrimary)),
+                      style: theme.textTheme.displayMedium
+                          ?.copyWith(color: theme.colorScheme.onPrimary, fontWeight: FontWeight.bold)),
                 ],
               ),
               Row(
@@ -435,15 +359,15 @@ class _WeeklyGrowthCard extends StatelessWidget {
                   Container(
                     width: 8,
                     height: 8,
-                    decoration: const BoxDecoration(
-                        color: AppColors.onPrimary, shape: BoxShape.circle),
+                    decoration: BoxDecoration(
+                        color: theme.colorScheme.onPrimary, shape: BoxShape.circle),
                   ),
                   const SizedBox(width: AppSpacing.xs),
                   Text('Pouls du commerce en temps réel',
                       style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.onPrimary)),
+                          color: theme.colorScheme.onPrimary)),
                 ],
               ),
             ],
@@ -457,11 +381,13 @@ class _WeeklyGrowthCard extends StatelessWidget {
 class _WavePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = AppColors.onPrimary;
+    final paint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
     final w = size.width, h = size.height;
     final path = Path()
-      ..moveTo(0, h * 0.66)
-      ..cubicTo(w * .25, h * .16, w * .5, h * .83, w, h * .33)
+      ..moveTo(0, h * 0.7)
+      ..cubicTo(w * .3, h * .2, w * .7, h * 1.2, w, h * .4)
       ..lineTo(w, h)
       ..lineTo(0, h)
       ..close();
@@ -479,6 +405,7 @@ class _RestockCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -486,40 +413,22 @@ class _RestockCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('À réapprovisionner', style: AppTypography.labelMd),
+              Text('À réapprovisionner', style: theme.textTheme.titleSmall),
               if (products.isNotEmpty)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.base, vertical: AppSpacing.xs),
-                  decoration: BoxDecoration(
-                    color: AppColors.errorContainer,
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                  ),
-                  child: Text('CRITIQUE',
-                      style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.onErrorContainer)),
-                ),
+                const AppChip(label: 'CRITIQUE', status: AppChipStatus.error),
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
           if (products.isEmpty)
             Text('Aucun produit à réapprovisionner 👍',
-                style: AppTypography.bodySm
-                    .copyWith(color: AppColors.onSurfaceVariant))
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant))
           else ...[
             for (final p in products.take(3)) _RestockRow(product: p),
             const SizedBox(height: AppSpacing.lg),
-            OutlinedButton(
+            AppButton.secondary(
               onPressed: () => context.go('/fournisseurs'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                side: const BorderSide(color: AppColors.primary),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.lg)),
-              ),
-              child: const Text('Commander'),
+              label: 'Commander',
             ),
           ],
         ],
@@ -535,6 +444,7 @@ class _RestockRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final critical = product.stockQuantity <= 2;
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
@@ -544,96 +454,30 @@ class _RestockRow extends StatelessWidget {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: AppColors.surfaceContainer,
+              color: theme.colorScheme.surfaceContainer,
               borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
-            child: const Icon(Icons.inventory_2_outlined,
-                size: 16, color: AppColors.primary),
+            child: Icon(Icons.inventory_2_outlined,
+                size: 16, color: theme.colorScheme.primary),
           ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(product.name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: AppTypography.bodySm),
+                style: theme.textTheme.bodyMedium),
           ),
           Text(
             'reste ${formatQuantity(product.stockQuantity)}',
-            style: AppTypography.labelSm.copyWith(
+            style: theme.textTheme.labelSmall?.copyWith(
               color: critical
-                  ? AppColors.error
-                  : AppColors.onTertiaryFixedVariant,
-              fontWeight: FontWeight.w700,
+                  ? theme.colorScheme.error
+                  : theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.bold,
             ),
           ),
         ],
       ),
     );
   }
-}
-
-class _AiTipCard extends StatelessWidget {
-  const _AiTipCard({required this.bestSeller});
-
-  final String? bestSeller;
-
-  @override
-  Widget build(BuildContext context) {
-    final tip = bestSeller != null
-        ? '« Concentrez-vous sur $bestSeller cette semaine — '
-            'c\'est votre meilleure vente. »'
-        : '« Enregistrez vos ventes pour recevoir des conseils '
-            'personnalisés sur votre commerce. »';
-    return CustomPaint(
-      painter: _DashedBorderPainter(),
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          children: [
-            Text(tip,
-                textAlign: TextAlign.center,
-                style: AppTypography.labelSm.copyWith(
-                    fontStyle: FontStyle.italic,
-                    color: AppColors.onSurfaceVariant)),
-            const SizedBox(height: AppSpacing.md),
-            const CircleAvatar(
-              radius: 16,
-              backgroundColor: AppColors.primary,
-              child: Text('IA',
-                  style: TextStyle(
-                      color: AppColors.onPrimary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Bord en pointillés (carte conseil IA), fidèle à la maquette.
-class _DashedBorderPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = AppColors.outline
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-    final rrect = RRect.fromRectAndRadius(
-        Offset.zero & size, const Radius.circular(AppRadius.xl));
-    final path = Path()..addRRect(rrect);
-    const dash = 6.0, gap = 4.0;
-    for (final metric in path.computeMetrics()) {
-      var d = 0.0;
-      while (d < metric.length) {
-        canvas.drawPath(
-            metric.extractPath(d, d + dash), paint);
-        d += dash + gap;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

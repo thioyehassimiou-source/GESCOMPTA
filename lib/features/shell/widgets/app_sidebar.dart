@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 
 class NavDestination {
@@ -25,7 +24,6 @@ const _mainDestinations = <NavDestination>[
 ];
 
 const _bottomDestinations = <NavDestination>[
-  NavDestination(path: '/assistant', label: 'Assistant IA', icon: Icons.smart_toy_outlined),
   NavDestination(path: '/reglages', label: 'Réglages', icon: Icons.settings_outlined),
 ];
 
@@ -35,13 +33,15 @@ class AppSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final location = GoRouterState.of(context).matchedLocation;
+    final theme = Theme.of(context);
+
     bool isActive(String path) => path == '/' ? location == '/' : location.startsWith(path);
 
     return Container(
       width: AppSpacing.navWidth,
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        boxShadow: [
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLowest,
+        boxShadow: const [
           BoxShadow(
             color: Color(0x1A101828),
             offset: Offset(0, 1),
@@ -52,20 +52,21 @@ class AppSidebar extends StatelessWidget {
       child: Column(
         children: [
           const SizedBox(height: AppSpacing.base),
+          // Logo
           Padding(
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
             child: Container(
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: AppColors.primaryContainer,
+                color: theme.colorScheme.primaryContainer,
                 borderRadius: BorderRadius.circular(AppRadius.lg),
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
                   'G',
                   style: TextStyle(
-                    color: AppColors.onPrimaryContainer,
+                    color: theme.colorScheme.onPrimaryContainer,
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                   ),
@@ -73,6 +74,7 @@ class AppSidebar extends StatelessWidget {
               ),
             ),
           ),
+          // Navigation principale
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -83,6 +85,7 @@ class AppSidebar extends StatelessWidget {
               ),
             ),
           ),
+          // Navigation du bas (Réglages)
           for (final d in _bottomDestinations)
             _NavItem(destination: d, active: isActive(d.path)),
           const SizedBox(height: AppSpacing.base),
@@ -92,6 +95,8 @@ class AppSidebar extends StatelessWidget {
   }
 }
 
+
+
 class _NavItem extends StatelessWidget {
   const _NavItem({required this.destination, required this.active});
 
@@ -100,13 +105,14 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = active ? AppColors.primary : AppColors.onSurfaceVariant;
-    
+    final theme = Theme.of(context);
+    final color = active ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant;
+
     return Material(
-      color: active ? AppColors.secondaryContainer : Colors.transparent,
+      color: active ? theme.colorScheme.secondaryContainer : Colors.transparent,
       child: InkWell(
         onTap: () => context.go(destination.path),
-        hoverColor: AppColors.surfaceContainer,
+        hoverColor: theme.colorScheme.surfaceContainer,
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
@@ -114,7 +120,7 @@ class _NavItem extends StatelessWidget {
             border: Border(
               left: BorderSide(
                 width: 4,
-                color: active ? AppColors.primary : Colors.transparent,
+                color: active ? theme.colorScheme.primary : Colors.transparent,
               ),
             ),
           ),

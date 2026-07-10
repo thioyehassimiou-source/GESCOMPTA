@@ -37,7 +37,6 @@ class DashboardData {
     required this.salesGrowth,
     required this.profitGrowth,
     required this.weeklyGrowth,
-    required this.bestSeller,
   });
 
   final int todaySales;
@@ -53,8 +52,6 @@ class DashboardData {
   final double? profitGrowth;
   final double? weeklyGrowth;
 
-  /// Produit le plus vendu cette semaine (conseil de l'assistant).
-  final String? bestSeller;
 }
 
 final dashboardDataProvider = FutureProvider<DashboardData>((ref) async {
@@ -134,23 +131,7 @@ final dashboardDataProvider = FutureProvider<DashboardData>((ref) async {
     ));
   }
 
-  // Meilleure vente de la semaine (par quantité).
-  final weekIds = sales
-      .where((s) => !s.date.isBefore(startWeek))
-      .map((s) => s.id)
-      .toSet();
-  final qtyByLabel = <String, double>{};
-  for (final it in items.where((i) => weekIds.contains(i.saleId))) {
-    qtyByLabel.update(it.label, (q) => q + it.quantity,
-        ifAbsent: () => it.quantity);
-  }
-  String? bestSeller;
-  if (qtyByLabel.isNotEmpty) {
-    bestSeller = (qtyByLabel.entries.toList()
-          ..sort((a, b) => b.value.compareTo(a.value)))
-        .first
-        .key;
-  }
+
 
   return DashboardData(
     todaySales: todaySales,
@@ -163,6 +144,5 @@ final dashboardDataProvider = FutureProvider<DashboardData>((ref) async {
     salesGrowth: growth(todaySales, yesterdaySales),
     profitGrowth: growth(todayProfit, yesterdayProfit),
     weeklyGrowth: growth(thisWeek, prevWeek),
-    bestSeller: bestSeller,
   );
 });

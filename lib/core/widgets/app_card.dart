@@ -10,7 +10,7 @@ class AppCard extends StatelessWidget {
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(AppSpacing.lg),
-    this.color = AppColors.surfaceContainerLowest,
+    this.color,
     this.onTap,
     this.hoverBorder = false,
     this.clip = false,
@@ -18,7 +18,7 @@ class AppCard extends StatelessWidget {
 
   final Widget child;
   final EdgeInsetsGeometry padding;
-  final Color color;
+  final Color? color;
   final VoidCallback? onTap;
 
   /// Bord qui passe au primaire au survol (cartes interactives).
@@ -33,14 +33,15 @@ class AppCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final radius = BorderRadius.circular(AppRadius.xl);
     final content = Padding(padding: padding, child: child);
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: color,
+        color: color ?? theme.colorScheme.surfaceContainerLowest,
         borderRadius: radius,
-        border: Border.all(color: AppColors.outlineVariant),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
         boxShadow: _shadow,
       ),
       child: Material(

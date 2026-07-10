@@ -30,9 +30,9 @@ class AppChip extends StatelessWidget {
         dotColor = theme.colorScheme.primary;
         break;
       case AppChipStatus.warning:
-        backgroundColor = AppColors.warningContainer.withOpacity(0.6);
-        textColor = AppColors.onWarningContainer;
-        dotColor = AppColors.warning;
+        backgroundColor = theme.colorScheme.tertiaryContainer.withValues(alpha: 0.6);
+        textColor = theme.colorScheme.onTertiaryContainer;
+        dotColor = theme.colorScheme.tertiary;
         break;
       case AppChipStatus.error:
         backgroundColor = theme.colorScheme.errorContainer.withOpacity(0.4);
@@ -104,8 +104,8 @@ class AppBadge extends StatelessWidget {
         textColor = theme.colorScheme.onSecondaryContainer;
         break;
       case AppChipStatus.warning:
-        backgroundColor = AppColors.warningContainer;
-        textColor = AppColors.onWarningContainer;
+        backgroundColor = theme.colorScheme.tertiaryContainer;
+        textColor = theme.colorScheme.onTertiaryContainer;
         break;
       case AppChipStatus.error:
         backgroundColor = theme.colorScheme.errorContainer;

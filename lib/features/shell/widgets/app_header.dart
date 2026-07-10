@@ -1,21 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/providers/theme_provider.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/app_search_bar.dart';
 
-class AppHeader extends StatelessWidget {
+class AppHeader extends ConsumerWidget {
   const AppHeader({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final location = GoRouterState.of(context).matchedLocation;
-    
+    final theme = Theme.of(context);
+    final isDark = ref.watch(themeProvider) == ThemeMode.dark;
+
     String title = 'GESCOMPTA';
     String subtitle = 'Gestion des Stocks';
     String placeholder = 'Rechercher...';
-    
+
     if (location.startsWith('/fournisseurs')) {
       title = 'Fournisseurs';
       subtitle = 'Achats & Dettes';
@@ -29,7 +32,7 @@ class AppHeader extends StatelessWidget {
     return Container(
       height: AppSpacing.topBarHeight,
       decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.8),
+        color: theme.colorScheme.surface.withValues(alpha: 0.8),
         boxShadow: const [
           BoxShadow(
               color: Color(0x14101828), offset: Offset(0, 1), blurRadius: 2),
@@ -41,23 +44,24 @@ class AppHeader extends StatelessWidget {
           children: [
             Text(title,
                 style: AppTypography.headlineMd.copyWith(
-                    color: AppColors.primary, fontWeight: FontWeight.w700, letterSpacing: -0.5)),
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5)),
             const SizedBox(width: AppSpacing.md),
-            Container(
-              height: 24,
-              width: 1,
-              color: AppColors.outlineVariant,
-            ),
+            Container(height: 24, width: 1, color: theme.colorScheme.outlineVariant),
             const SizedBox(width: AppSpacing.md),
             Text(subtitle.toUpperCase(),
                 style: AppTypography.labelSm.copyWith(
-                    color: AppColors.onSurfaceVariant, letterSpacing: 1.5)),
+                    color: theme.colorScheme.onSurfaceVariant, letterSpacing: 1.5)),
             const Spacer(),
             SizedBox(
               width: 400,
               child: AppSearchBar(hintText: placeholder),
             ),
             const Spacer(),
+            // ── Bouton toggle thème ──
+            _ThemeToggle(isDark: isDark, ref: ref),
+            const SizedBox(width: AppSpacing.xs),
             _iconButton(context, Icons.notifications_outlined, badge: true),
             const SizedBox(width: AppSpacing.xs),
             _iconButton(context, Icons.help_outline),
@@ -70,11 +74,12 @@ class AppHeader extends StatelessWidget {
   }
 
   Widget _iconButton(BuildContext context, IconData icon, {bool badge = false}) {
+    final theme = Theme.of(context);
     return IconButton(
       onPressed: () {},
       icon: Stack(
         children: [
-          Icon(icon, color: AppColors.onSurfaceVariant),
+          Icon(icon, color: theme.colorScheme.onSurfaceVariant),
           if (badge)
             Positioned(
               right: 0,
@@ -83,17 +88,66 @@ class AppHeader extends StatelessWidget {
                 width: 8,
                 height: 8,
                 decoration: BoxDecoration(
-                  color: AppColors.error,
+                  color: theme.colorScheme.error,
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.surface, width: 1.5),
+                  border: Border.all(color: theme.colorScheme.surface, width: 1.5),
                 ),
               ),
             ),
         ],
       ),
       style: IconButton.styleFrom(
-        hoverColor: AppColors.surfaceContainer,
+        hoverColor: theme.colorScheme.surfaceContainer,
         shape: const CircleBorder(),
+      ),
+    );
+  }
+}
+
+/// Bouton de bascule thème dans l'en-tête.
+class _ThemeToggle extends StatelessWidget {
+  const _ThemeToggle({required this.isDark, required this.ref});
+
+  final bool isDark;
+  final WidgetRef ref;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Tooltip(
+      message: isDark ? 'Passer en mode clair' : 'Passer en mode sombre',
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(AppRadius.full),
+        child: InkWell(
+          onTap: () => ref.read(themeProvider.notifier).toggle(),
+          borderRadius: BorderRadius.circular(AppRadius.full),
+          hoverColor: theme.colorScheme.surfaceContainer,
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainer,
+              borderRadius: BorderRadius.circular(AppRadius.full),
+            ),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (child, anim) =>
+                  RotationTransition(
+                    turns: Tween(begin: 0.8, end: 1.0).animate(anim),
+                    child: FadeTransition(opacity: anim, child: child),
+                  ),
+              child: Icon(
+                isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                key: ValueKey(isDark),
+                size: 20,
+                color: isDark
+                    ? const Color(0xFFFCD34D) // jaune soleil en mode sombre
+                    : theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -104,6 +158,7 @@ class _ProfileChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Row(
       children: [
         Column(
@@ -111,11 +166,12 @@ class _ProfileChip extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text('Alpha Diallo',
-                style: AppTypography.labelMd
-                    .copyWith(fontWeight: FontWeight.w700)),
-            const Text('Guinée Commerce',
+                style: AppTypography.labelMd.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.onSurface)),
+            Text('Guinée Commerce',
                 style: TextStyle(
-                    fontSize: 10, color: AppColors.onSurfaceVariant)),
+                    fontSize: 10, color: theme.colorScheme.onSurfaceVariant)),
           ],
         ),
         const SizedBox(width: AppSpacing.sm),
@@ -124,11 +180,11 @@ class _ProfileChip extends StatelessWidget {
           height: 40,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: AppColors.secondaryContainer,
-            border: Border.all(color: AppColors.outlineVariant, width: 1),
+            color: theme.colorScheme.secondaryContainer,
+            border: Border.all(color: theme.colorScheme.outlineVariant, width: 1),
           ),
-          child: const Center(
-            child: Icon(Icons.person, color: AppColors.onSecondaryContainer),
+          child: Center(
+            child: Icon(Icons.person, color: theme.colorScheme.onSecondaryContainer),
           ),
         ),
       ],

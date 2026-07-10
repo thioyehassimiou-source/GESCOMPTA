@@ -1,7 +1,7 @@
 # GESCOMPTA
 
 Logiciel **Desktop** de gestion commerciale et de comptabilité **SYSCOHADA**
-assisté par IA, destiné aux commerçants et petites entreprises de Guinée.
+destiné aux commerçants et petites entreprises de Guinée.
 Fonctionne **hors-ligne en priorité** (base de données locale SQLite).
 
 > Le cahier des charges complet est dans `GESCOMPTA_Cahier_des_charges.docx`.
@@ -15,7 +15,7 @@ Fonctionne **hors-ligne en priorité** (base de données locale SQLite).
 | Gestion d'état       | Riverpod (`flutter_riverpod`)                      |
 | Navigation           | `go_router`                                       |
 | Documents PDF        | `pdf` + `printing`                                |
-| IA (optionnelle, V2) | API distante via `http`                           |
+
 
 ## Démarrer
 
@@ -67,7 +67,6 @@ lib/
     ├── stock/                # produits & stock (fonctionnel)
     ├── receivables/          # créances clients (cahier de crédit)
     ├── accounting/           # comptabilité SYSCOHADA (plan comptable)
-    ├── ai/                   # assistant intelligent
     ├── settings/             # configuration boutique / secteur
     ├── shell/                # ossature (NavigationRail)
     └── common/               # widgets partagés
@@ -97,7 +96,7 @@ La base est stockée dans le dossier support de l'application
 - ⬜ Journal, grand livre et balance (édition + export PDF)
 - ⬜ Reçus PDF
 - ⬜ Modules sectoriels (épicerie, pièces détachées)
-- ⬜ Assistant IA (optionnel)
+
 
 > ⚠️ **Conformité :** les écritures et états comptables générés devront être
 > validés par un comptable / expert SYSCOHADA avant commercialisation

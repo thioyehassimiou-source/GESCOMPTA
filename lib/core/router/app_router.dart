@@ -1,6 +1,5 @@
 import 'package:go_router/go_router.dart';
 
-import '../../features/ai/presentation/assistant_screen.dart';
 import '../../features/business/presentation/business_summary_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/receivables/presentation/clients_screen.dart';
@@ -44,11 +43,6 @@ final appRouter = GoRouter(
           path: '/mon-commerce',
           pageBuilder: (c, s) =>
               const NoTransitionPage(child: BusinessSummaryScreen()),
-        ),
-        GoRoute(
-          path: '/assistant',
-          pageBuilder: (c, s) =>
-              const NoTransitionPage(child: AssistantScreen()),
         ),
         GoRoute(
           path: '/reglages',
