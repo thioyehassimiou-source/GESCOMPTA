@@ -49,4 +49,16 @@ class DriftReceivablesRepository implements ReceivablesRepository {
             ))
         .toList(growable: false));
   }
+  @override
+  Future<List<PaymentHistoryItem>> getPaymentHistory(String customerId) async {
+    final query = _db.select(_db.creditPayments)
+      ..where((p) => p.customerId.equals(customerId))
+      ..orderBy([(p) => OrderingTerm(expression: p.date, mode: OrderingMode.desc)]);
+
+    final rows = await query.get();
+    return rows.map((r) => PaymentHistoryItem(
+      amount: r.amount,
+      date: r.date,
+    )).toList();
+  }
 }
