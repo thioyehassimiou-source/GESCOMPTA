@@ -149,6 +149,7 @@ class AuthFieldLabel extends StatelessWidget {
 
 /// Décoration commune des champs de saisie des écrans d'authentification.
 InputDecoration authInputDecoration(
+  BuildContext context,
   String hint,
   IconData icon, {
   Widget? suffixIcon,

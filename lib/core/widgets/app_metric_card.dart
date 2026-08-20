@@ -46,7 +46,9 @@ class AppMetricCard extends StatelessWidget {
             width: 46,
             height: 46,
             decoration: BoxDecoration(
-              color: iconBackgroundColor,
+              color: theme.brightness == Brightness.dark
+                  ? iconColor.withValues(alpha: 0.15)
+                  : iconBackgroundColor,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: iconColor, size: 22),

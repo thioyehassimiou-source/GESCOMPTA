@@ -130,6 +130,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               textCapitalization: TextCapitalization.words,
               autofillHints: const [AutofillHints.name],
               decoration: authInputDecoration(
+                context,
                 'Ex: Mamadou Diallo',
                 Icons.person_outline_rounded,
               ),
@@ -146,6 +147,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               autofillHints: const [AutofillHints.password],
               onFieldSubmitted: (_) => _submitting ? null : _submit(),
               decoration: authInputDecoration(
+                context,
                 '••••••••',
                 Icons.lock_outline_rounded,
                 suffixIcon: IconButton(

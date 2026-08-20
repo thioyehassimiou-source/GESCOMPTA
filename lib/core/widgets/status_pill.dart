@@ -14,17 +14,17 @@ class StatusPill extends StatelessWidget {
   });
 
   /// Vente réglée : suit le template de la boutique.
-  StatusPill.paid({super.key})
+  const StatusPill.paid({super.key})
     : label = 'Payé',
       background = null,
       foreground = null;
 
   /// Vente (partiellement) à crédit. Le rouge d'alerte ne dépend pas du
   /// template : une dette doit se repérer à l'identique partout.
-  StatusPill.credit({super.key})
+  const StatusPill.credit({super.key})
     : label = 'Crédit',
-      background = context.colors.errorContainer,
-      foreground = context.colors.onErrorContainer;
+      background = null,
+      foreground = null;
 
   final String label;
 
@@ -34,19 +34,23 @@ class StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isCredit = label == 'Crédit';
+    final defaultBg = isCredit ? context.colors.errorContainer : context.colors.secondaryContainer;
+    final defaultFg = isCredit ? context.colors.onErrorContainer : context.colors.onSecondaryContainer;
+
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.sm,
         vertical: 4,
       ),
       decoration: BoxDecoration(
-        color: background ?? context.colors.secondaryContainer,
+        color: background ?? defaultBg,
         borderRadius: BorderRadius.circular(AppRadius.full),
       ),
       child: Text(
         label,
         style: TextStyle(
-          color: foreground ?? context.colors.onSecondaryContainer,
+          color: foreground ?? defaultFg,
           fontSize: 12,
           fontWeight: FontWeight.w700,
         ),
