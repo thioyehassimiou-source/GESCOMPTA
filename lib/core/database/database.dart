@@ -5,12 +5,16 @@ import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
-import 'seed/syscohada_accounts.dart';
-import 'tables/accounting.dart';
-import 'tables/customers.dart';
 import 'tables/products.dart';
 import 'tables/sales.dart';
 import 'tables/stock.dart';
+import 'tables/suppliers.dart';
+import 'tables/audit_logs.dart';
+import 'tables/users.dart';
+import 'tables/cash_movements.dart';
+import 'tables/expenses.dart';
+import 'tables/orders.dart';
+import 'tables/deliveries.dart';
 
 part 'database.g.dart';
 
@@ -22,9 +26,18 @@ part 'database.g.dart';
     SaleItems,
     CreditPayments,
     StockMovements,
-    Accounts,
-    JournalEntries,
-    JournalLines,
+    Suppliers,
+    Purchases,
+    PurchaseItems,
+    SupplierPayments,
+    Users,
+    CashMovements,
+    Expenses,
+    Orders,
+    OrderItems,
+    Couriers,
+    Deliveries,
+    AuditLogs,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -34,43 +47,105 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (m) async {
           await m.createAll();
-          await _seedAccounts();
+        },
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            await m.createTable(suppliers);
+            await m.createTable(purchases);
+            await m.createTable(purchaseItems);
+            await m.createTable(supplierPayments);
+          }
+          if (from < 3) {
+            await m.createTable(users);
+          }
+          if (from < 4) {
+            // Passage au mono-utilisateur : conservation du compte le plus ancien.
+            await m.alterTable(TableMigration(users));
+            await customStatement(
+              'DELETE FROM users WHERE id NOT IN '
+              '(SELECT id FROM users ORDER BY created_at ASC LIMIT 1)',
+            );
+          }
+          if (from < 5) {
+            // Suppression des tables de comptabilité SYSCOHADA — abandonnées en V1.
+            // La gestion commerciale ne nécessite pas de plan comptable.
+            await customStatement(
+              'DROP TABLE IF EXISTS journal_lines',
+            );
+            await customStatement(
+              'DROP TABLE IF EXISTS journal_entries',
+            );
+            await customStatement(
+              'DROP TABLE IF EXISTS accounts',
+            );
+          }
+          if (from < 6) {
+            // Retrait des décimales (passage de REAL à INTEGER pour les quantités et coûts).
+            // Migration destructive pour repartir sur une base saine sans vrac.
+            await customStatement('DROP TABLE IF EXISTS credit_payments');
+            await customStatement('DROP TABLE IF EXISTS supplier_payments');
+            await customStatement('DROP TABLE IF EXISTS purchase_items');
+            await customStatement('DROP TABLE IF EXISTS purchases');
+            await customStatement('DROP TABLE IF EXISTS sale_items');
+            await customStatement('DROP TABLE IF EXISTS sales');
+            await customStatement('DROP TABLE IF EXISTS stock_movements');
+            await customStatement('DROP TABLE IF EXISTS products');
+
+            await m.createTable(products);
+            await m.createTable(sales);
+            await m.createTable(saleItems);
+            await m.createTable(creditPayments);
+            await m.createTable(stockMovements);
+            await m.createTable(purchases);
+            await m.createTable(purchaseItems);
+            await m.createTable(supplierPayments);
+          }
+          if (from < 7) {
+            await m.addColumn(sales, sales.isCancelled);
+            await m.addColumn(purchases, purchases.isCancelled);
+          }
+          if (from < 8) {
+            await m.createTable(cashMovements);
+          }
+          if (from < 9) {
+            await m.addColumn(products, products.imageUrl);
+          }
+          if (from < 10) {
+            await m.createTable(expenses);
+          }
+          if (from < 11) {
+            await m.createTable(orders);
+            await m.createTable(orderItems);
+          }
+          if (from < 12) {
+            await m.createTable(couriers);
+            await m.createTable(deliveries);
+          }
+          if (from < 13) {
+            await m.addColumn(users, users.role);
+            await m.addColumn(users, users.isActive);
+          }
+          if (from < 14) {
+            await m.createTable(auditLogs);
+          }
         },
         beforeOpen: (details) async {
-          // Intégrité référentielle : indispensable pour garantir qu'aucune
-          // écriture ne pointe vers un compte/produit inexistant, et que le
-          // rollback du moteur de vente laisse une base cohérente.
+          // Intégrité référentielle.
           await customStatement('PRAGMA foreign_keys = ON');
         },
       );
-
-  /// Insère le plan comptable SYSCOHADA au premier lancement.
-  Future<void> _seedAccounts() async {
-    await batch((b) {
-      b.insertAll(
-        accounts,
-        kSyscohadaSeedAccounts.map(
-          (a) => AccountsCompanion.insert(
-            code: a.code,
-            label: a.label,
-            accountClass: a.accountClass,
-            isHeader: Value(a.isHeader),
-          ),
-        ),
-      );
-    });
-  }
 }
 
 LazyDatabase _openConnection() {
   return LazyDatabase(() async {
     final dir = await getApplicationSupportDirectory();
+    // Le nom du fichier est interne et ne change pas lors d'un rebranding.
     final file = File(p.join(dir.path, 'gescompta.sqlite'));
     return NativeDatabase.createInBackground(file);
   });

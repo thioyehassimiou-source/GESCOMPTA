@@ -10,4 +10,5 @@ import '../entities/sale_draft.dart';
 /// et garantit un rollback complet.
 abstract interface class SaleService {
   Future<RecordedSale> record(SaleDraft draft);
+  Future<void> cancel(String saleId);
 }

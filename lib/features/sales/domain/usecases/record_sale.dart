@@ -26,7 +26,7 @@ class RecordSaleFailure extends RecordSaleResult {
 /// issue en [RecordSaleResult].
 class RecordSaleUseCase {
   const RecordSaleUseCase(this._service, {ProductLabelResolver? labelFor})
-      : _labelFor = labelFor;
+    : _labelFor = labelFor;
 
   final SaleService _service;
 

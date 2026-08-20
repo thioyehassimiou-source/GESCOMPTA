@@ -27,11 +27,15 @@ class AppButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     final bool isPrimary = variant == AppButtonVariant.primary;
-    
-    final backgroundColor = isPrimary ? theme.colorScheme.primary : theme.colorScheme.secondaryContainer;
-    final foregroundColor = isPrimary ? theme.colorScheme.onPrimary : theme.colorScheme.primary;
+
+    final backgroundColor = isPrimary
+        ? theme.colorScheme.primary
+        : theme.colorScheme.secondaryContainer;
+    final foregroundColor = isPrimary
+        ? theme.colorScheme.onPrimary
+        : theme.colorScheme.primary;
 
     return Material(
       color: Colors.transparent,
@@ -42,15 +46,20 @@ class AppButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: backgroundColor,
             borderRadius: BorderRadius.circular(AppRadius.lg),
-            boxShadow: isPrimary ? [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 2,
-                offset: const Offset(0, 1),
-              )
-            ] : null,
+            boxShadow: isPrimary
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 2,
+                      offset: const Offset(0, 1),
+                    ),
+                  ]
+                : null,
           ),
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 8.0),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: 8.0,
+          ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -95,14 +104,20 @@ class AppIconButton extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onPressed,
-          borderRadius: BorderRadius.circular(isSecondary ? AppRadius.lg : AppRadius.full),
-          hoverColor: isSecondary ? theme.colorScheme.secondaryContainer : theme.colorScheme.surfaceContainer,
+          borderRadius: BorderRadius.circular(
+            isSecondary ? AppRadius.lg : AppRadius.full,
+          ),
+          hoverColor: isSecondary
+              ? theme.colorScheme.secondaryContainer
+              : theme.colorScheme.surfaceContainer,
           child: Padding(
             padding: EdgeInsets.all(isSecondary ? 6.0 : AppSpacing.base),
             child: Icon(
               icon,
               size: 20,
-              color: isSecondary ? theme.colorScheme.onSurfaceVariant : theme.colorScheme.onSurfaceVariant,
+              color: isSecondary
+                  ? theme.colorScheme.onSurfaceVariant
+                  : theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ),

@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gescompta/core/database/database.dart';
-import 'package:gescompta/features/business/data/repositories/drift_business_summary_repository.dart';
+import 'package:nmashop/core/database/database.dart';
+import 'package:nmashop/features/business/data/repositories/drift_business_summary_repository.dart';
 
 /// Vérifie le résumé « Mon commerce » : sommes du mois en agrégats SQL, avec un
 /// `now` fixe pour délimiter le mois courant.
@@ -20,7 +20,7 @@ void main() {
         ProductsCompanion.insert(id: 'P', name: 'Produit'));
 
     Future<void> sale(String id, DateTime date, int total, int paid,
-        double qty, double unitCost, int lineTotal) async {
+        int qty, int unitCost, int lineTotal) async {
       await db.into(db.sales).insert(SalesCompanion.insert(
             id: id,
             reference: 'V-$id',

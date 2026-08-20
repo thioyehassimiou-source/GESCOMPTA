@@ -13,9 +13,9 @@ class DriftProductRepository implements ProductRepository {
     final idList = ids.toSet().toList();
     if (idList.isEmpty) return const {};
 
-    final rows = await (_db.select(_db.products)
-          ..where((t) => t.id.isIn(idList)))
-        .get();
+    final rows = await (_db.select(
+      _db.products,
+    )..where((t) => t.id.isIn(idList))).get();
 
     return {
       for (final p in rows)

@@ -1,0 +1,188 @@
+CAHIER DES CHARGES
+N'MaShop
+Logiciel de gestion commerciale et de comptabilité SYSCOHADA
+assisté par intelligence artificielle, pour Desktop
+Porteur de projet : Hassimiou
+Développeur Full-Stack — Université de Labé, Guinée
+Version 1.0 — Juillet 2026
+Document confidentiel — usage interne et présentation partenaires
+Sommaire
+TOC \h \o "1-3"
+1. Résumé exécutif
+N'MaShop est un logiciel de bureau (Desktop) destiné aux commerçants, boutiques et petites entreprises de Guinée, conçu pour remplacer le cahier papier et réduire la dépendance aux comptables externes. Il combine trois piliers : la gestion commerciale (ventes, stock, dettes clients), la comptabilité conforme aux normes SYSCOHADA révisées, et un assistant intelligent basé sur l'IA qui automatise la saisie comptable et produit des rapports compréhensibles par un non-spécialiste.
+Le logiciel fonctionne hors-ligne en priorité (base de données locale), avec synchronisation optionnelle, pour s'adapter aux réalités de connectivité du marché guinéen. Il est développé en Flutter, permettant un déploiement Desktop natif (Windows en priorité) avec une possibilité d'extension future vers mobile et tablette à partir de la même base de code.
+L'ambition du projet est de devenir l'outil de référence pour la gestion des petits et moyens commerces en Guinée, puis en Afrique de l'Ouest francophone, en combinant simplicité d'usage, conformité réglementaire locale (SYSCOHADA) et intelligence artificielle accessible.
+2. Contexte et problématique
+2.1 Constat du marché
+La grande majorité des boutiques et petits commerces en Guinée gèrent leurs ventes, leur stock et leurs créances clients sur cahier papier.
+Les commerçants qui souhaitent une comptabilité conforme SYSCOHADA font appel à des comptables externes, à un coût récurrent souvent élevé pour une PME.
+Les outils de gestion existants sur le marché sont soit trop génériques (non adaptés au contexte local et à SYSCOHADA), soit trop complexes et coûteux pour un petit commerçant.
+La connectivité internet reste irrégulière dans plusieurs zones (Labé, périphérie de Conakry), rendant les solutions 100% cloud peu fiables au quotidien.
+2.2 Opportunité
+Un logiciel Desktop, fonctionnant hors-ligne, combinant gestion commerciale et comptabilité normée SYSCOHADA, avec une couche d'intelligence artificielle qui simplifie la saisie et la lecture des données financières, répond à un besoin réel et peu adressé localement. Le porteur du projet dispose de compétences techniques (développement Flutter, bases de données) et de notions comptables SYSCOHADA/OHADA, ce qui constitue un avantage rare combinant expertise métier et capacité technique.
+3. Objectifs du projet
+3.1 Objectif général
+Développer un logiciel Desktop complet permettant à un commerçant de gérer ses ventes, son stock, ses créances clients et sa comptabilité SYSCOHADA de manière autonome, fiable et assistée par l'intelligence artificielle, sans dépendre d'un comptable externe pour les opérations courantes.
+3.2 Objectifs spécifiques
+Réduire de manière significative le temps consacré par le commerçant à la saisie et au suivi de ses opérations quotidiennes.
+Générer automatiquement les documents comptables réglementaires (journal, grand livre, balance) à partir des opérations commerciales.
+Rendre la comptabilité compréhensible pour un utilisateur non-initié grâce à des rapports en langage simple générés par l'IA.
+Proposer un outil modulable selon le secteur d'activité du commerce (épicerie, pièces détachées, pharmacie, textile, etc.).
+Fonctionner intégralement hors-ligne, sans dépendance à une connexion internet stable.
+Construire un modèle économique récurrent (abonnement) assurant un revenu stable au porteur de projet.
+4. Périmètre fonctionnel
+4.1 Approche : noyau commun + modules sectoriels
+Pour éviter de développer une version différente par secteur d'activité, le logiciel repose sur un noyau fonctionnel commun à tous les commerces, complété par des modules spécifiques activables selon le secteur déclaré à la configuration initiale.
+Noyau commun (tous secteurs)
+Gestion des ventes et encaissements
+Gestion du stock et des approvisionnements
+Gestion des créances clients (« cahier de crédit » numérique)
+Comptabilité SYSCOHADA (écritures, journal, grand livre, balance)
+Tableaux de bord et rapports (quotidien, mensuel)
+Assistant IA (catégorisation, anomalies, rapports en langage simple)
+Modules sectoriels (activables selon configuration)
+Secteur
+Spécificités du module
+Épicerie / alimentation générale
+Gestion par poids/unité, suivi des dates de péremption, gestion des produits en vrac
+Pièces détachées (auto/moto)
+Références techniques, compatibilité véhicule, recherche par modèle
+Pharmacie
+Gestion des lots, péremption stricte, dénomination commune internationale (DCI)
+Textile / tissus
+Gestion par mètre/coupon, variantes couleur et taille
+4.2 Phasage du périmètre
+Phase
+Contenu
+Statut
+V1 — MVP
+Noyau complet + 1 à 2 modules sectoriels (épicerie, pièces détachées) + comptabilité de base (journal, balance)
+Priorité immédiate
+V2
+Bilan et compte de résultat complets, modules sectoriels supplémentaires, synchronisation cloud optionnelle
+Après validation V1
+V3
+Version mobile/tablette (réutilisation du code Flutter), multi-boutiques, module pour comptables (gestion multi-clients)
+Vision long terme
+5. Spécifications fonctionnelles détaillées
+5.1 Module Ventes et encaissements
+Enregistrement rapide d'une vente (produit, quantité, prix, mode de paiement)
+Écran principal optimisé pour un usage à haute fréquence (plusieurs dizaines de ventes par jour)
+Génération de reçus imprimables au format PDF
+Historique des ventes consultable et filtrable par date, produit, client
+5.2 Module Stock
+Fiche produit (nom, référence, prix d'achat, prix de vente, quantité en stock)
+Alerte automatique en cas de stock faible ou de rupture
+Historique des entrées et sorties de stock
+Valorisation du stock (méthode à définir : coût moyen pondéré, conforme aux pratiques SYSCOHADA)
+5.3 Module Créances clients
+Enregistrement des ventes à crédit avec identification du client
+Suivi des remboursements partiels et soldes restants
+Rappels automatiques des créances arrivant à échéance
+5.4 Module Comptabilité SYSCOHADA
+Plan comptable SYSCOHADA révisé intégré (classes 1 à 8)
+Génération automatique des écritures comptables à partir des opérations de vente, d'achat et de stock
+Édition du journal comptable et du grand livre
+Édition de la balance générale
+Version ultérieure (V2) : bilan et compte de résultat conformes au système normal ou au système minimal de trésorerie, selon la taille de l'entreprise
+5.5 Module Intelligence artificielle
+Catégorisation automatique des transactions dans le compte SYSCOHADA approprié
+Détection d'anomalies (montants incohérents, comptes mal utilisés, écarts de stock suspects)
+Génération de synthèses en langage courant (« Ce mois-ci, vous avez vendu X, vos charges principales sont Y, votre marge est Z »)
+Assistant conversationnel pour répondre aux questions du commerçant sur ses propres données (« Combien je dois à mes fournisseurs ce mois-ci ? »)
+5.6 Tableaux de bord et rapports
+Rapport journalier : total des ventes, bénéfice estimé, créances en cours
+Rapport mensuel : chiffre d'affaires, charges, résultat, évolution du stock
+Export des rapports en PDF pour partage avec un comptable ou une banque
+6. Spécifications techniques
+6.1 Stack technologique
+Composant
+Choix technique
+Justification
+Framework applicatif
+Flutter Desktop
+Maîtrisé par le porteur de projet, base de code réutilisable pour une future version mobile
+Base de données locale
+SQLite via sqflite_common_ffi ou Drift
+Fonctionnement 100% hors-ligne, fiable sur connexion instable ou absente
+Gestion d'état
+Riverpod ou Provider
+Simplicité de maintenance pour un développement en solo ou petite équipe
+Génération de documents
+Package pdf (Dart)
+Reçus, factures et rapports imprimables
+Intelligence artificielle
+Appel à une API IA existante (ex. Claude, GPT) via requêtes HTTP
+Évite l'entraînement d'un modèle propriétaire ; permet un développement rapide
+Synchronisation (V2)
+Backend Node.js + PostgreSQL, à définir
+Pour la sauvegarde cloud optionnelle et le multi-poste
+6.2 Plateformes cibles
+Windows : plateforme prioritaire (la plus répandue chez les commerçants équipés d'un ordinateur)
+Linux et macOS : support natif de Flutter, disponible sans effort de développement supplémentaire significatif
+6.3 Contraintes techniques
+Fonctionnement garanti sans connexion internet pour toutes les fonctions du noyau (ventes, stock, créances, comptabilité)
+La fonctionnalité IA nécessite une connexion internet ponctuelle ; le logiciel doit rester pleinement utilisable en son absence
+Compatibilité avec du matériel modeste (ordinateurs de comptoir plus anciens, RAM limitée)
+Sauvegarde locale automatique de la base de données pour éviter toute perte de données
+7. Modèle économique
+7.1 Structure tarifaire proposée
+Offre
+Contenu
+Tarif indicatif
+Installation initiale
+Installation, configuration du secteur d'activité, formation de base du commerçant
+150 000 – 300 000 GNF (unique)
+Abonnement Essentiel
+Support, mises à jour, module comptabilité de base
+10 000 – 15 000 GNF / mois
+Abonnement Pro
+Toutes fonctionnalités + assistant IA + rapports avancés
+25 000 – 40 000 GNF / mois
+7.2 Stratégie de lancement
+Phase pilote gratuite (1 mois) avec 1 à 3 boutiques test, en échange de retours d'usage détaillés
+Utilisation des cas pilotes comme référence commerciale pour démarcher de nouveaux clients
+Acompte à l'installation dès le second client, pour financer le développement des modules suivants
+Ciblage initial : Conakry (densité commerciale) et Labé (ancrage local du porteur de projet)
+8. Feuille de route (Roadmap)
+Étape
+Contenu
+Durée estimée
+1. Cadrage
+Validation du cahier des charges, choix définitif du premier secteur cible, maquettes d'écrans
+1 à 2 semaines
+2. Développement du noyau
+Ventes, stock, créances clients, base de données locale
+3 à 5 semaines
+3. Module comptabilité de base
+Plan comptable SYSCOHADA, écritures automatiques, journal, balance
+3 à 4 semaines
+4. Intégration IA
+Catégorisation automatique, rapports en langage simple
+2 à 3 semaines
+5. Test pilote
+Déploiement chez 1 à 3 boutiques test, corrections
+2 à 4 semaines
+6. Lancement commercial
+Démarchage élargi, facturation des nouveaux clients
+Continu
+9. Risques et points de vigilance
+Risque
+Mitigation
+Complexité excessive de la V1 (trop de fonctionnalités dès le départ)
+Limiter strictement la V1 au noyau + comptabilité de base ; reporter bilan/compte de résultat complets en V2
+Résistance au changement des commerçants habitués au cahier papier
+Phase pilote gratuite, formation simple, interface volontairement épurée
+Fiabilité juridique de la comptabilité générée
+Faire valider les écritures et états par un comptable ou expert SYSCOHADA avant commercialisation
+Dépendance à une API IA externe (coût, disponibilité)
+Garantir un fonctionnement complet du logiciel sans l'IA ; IA en option activable
+Charge de développement solo
+Prioriser rigoureusement le périmètre V1 ; envisager l'appui ponctuel d'un pair développeur
+10. Critères de succès
+Le noyau (ventes, stock, créances) est utilisé quotidiennement par les boutiques pilotes sans retour au cahier papier
+Les écritures comptables générées sont validées comme correctes par un comptable indépendant
+Au moins un commerçant accepte de payer l'abonnement à l'issue de la phase pilote
+Le temps de saisie quotidien du commerçant diminue de manière mesurable par rapport à sa méthode précédente
+Le logiciel reste pleinement fonctionnel en l'absence totale de connexion internet
+Fin du cahier des charges — Document rédigé pour servir de base de discussion avec partenaires, co-fondateurs potentiels ou premiers clients pilotes.

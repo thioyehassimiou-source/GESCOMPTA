@@ -42,8 +42,11 @@ class DriftDashboardRepository implements DashboardRepository {
     final sum = _db.sales.totalAmount.sum();
     final q = _db.selectOnly(_db.sales)
       ..addColumns([sum])
-      ..where(_db.sales.date.isBiggerOrEqualValue(start) &
-          _db.sales.date.isSmallerThanValue(end));
+      ..where(
+        _db.sales.date.isBiggerOrEqualValue(start) &
+            _db.sales.date.isSmallerThanValue(end) &
+            _db.sales.isCancelled.equals(false),
+      );
     return (await q.getSingle()).read(sum) ?? 0;
   }
 
@@ -55,19 +58,23 @@ class DriftDashboardRepository implements DashboardRepository {
       'COALESCE(SUM(sale_items.line_total - '
       'CAST(round(sale_items.unit_cost * sale_items.quantity) AS INTEGER)), 0)',
     );
-    final q = _db.selectOnly(_db.saleItems).join([
-      innerJoin(_db.sales, _db.sales.id.equalsExp(_db.saleItems.saleId)),
-    ])
-      ..addColumns([profit])
-      ..where(_db.sales.date.isBiggerOrEqualValue(start) &
-          _db.sales.date.isSmallerThanValue(end));
+    final q =
+        _db.selectOnly(_db.saleItems).join([
+            innerJoin(_db.sales, _db.sales.id.equalsExp(_db.saleItems.saleId)),
+          ])
+          ..addColumns([profit])
+          ..where(
+            _db.sales.date.isBiggerOrEqualValue(start) &
+                _db.sales.date.isSmallerThanValue(end) &
+                _db.sales.isCancelled.equals(false),
+          );
     return (await q.getSingle()).read(profit) ?? 0;
   }
 
   /// Σ(total_amount − amount_paid) sur toutes les ventes.
   Future<int> _owed() async {
     final owed = (_db.sales.totalAmount - _db.sales.amountPaid).sum();
-    final q = _db.selectOnly(_db.sales)..addColumns([owed]);
+    final q = _db.selectOnly(_db.sales)..addColumns([owed])..where(_db.sales.isCancelled.equals(false));
     return (await q.getSingle()).read(owed) ?? 0;
   }
 
@@ -76,52 +83,61 @@ class DriftDashboardRepository implements DashboardRepository {
     final count = _db.sales.id.count();
     final q = _db.selectOnly(_db.sales)
       ..addColumns([count])
-      ..where(_db.sales.totalAmount.isBiggerThan(_db.sales.amountPaid));
+      ..where(_db.sales.totalAmount.isBiggerThan(_db.sales.amountPaid) & _db.sales.isCancelled.equals(false));
     return (await q.getSingle()).read(count) ?? 0;
   }
 
-  /// Solde des comptes de trésorerie (classe 5) = Σ(débit − crédit).
+  /// Encaissements totaux = Σ(amount_paid) sur toutes les ventes.
+  /// Simple et direct — sans journalLines.
   Future<int> _cashAvailable() async {
-    final balance = (_db.journalLines.debit - _db.journalLines.credit).sum();
-    final q = _db.selectOnly(_db.journalLines)
-      ..addColumns([balance])
-      ..where(_db.journalLines.accountCode.like('5%'));
-    return (await q.getSingle()).read(balance) ?? 0;
+    final sum = _db.sales.amountPaid.sum();
+    final q = _db.selectOnly(_db.sales)..addColumns([sum])..where(_db.sales.isCancelled.equals(false));
+    return (await q.getSingle()).read(sum) ?? 0;
   }
 
   Future<List<LowStockItem>> _lowStock() async {
-    final rows = await (_db.select(_db.products)
-          ..where((p) =>
-              p.isActive.equals(true) &
-              p.stockQuantity.isSmallerOrEqual(p.lowStockThreshold))
-          ..orderBy([(p) => OrderingTerm(expression: p.stockQuantity)]))
-        .get();
+    final rows =
+        await (_db.select(_db.products)
+              ..where(
+                (p) =>
+                    p.isActive.equals(true) &
+                    p.stockQuantity.isSmallerOrEqual(p.lowStockThreshold),
+              )
+              ..orderBy([(p) => OrderingTerm(expression: p.stockQuantity)]))
+            .get();
     return rows
-        .map((r) => LowStockItem(
-              name: r.name,
-              unit: r.unit,
-              stockQuantity: r.stockQuantity,
-            ))
+        .map(
+          (r) => LowStockItem(
+            name: r.name,
+            unit: r.unit,
+            stockQuantity: r.stockQuantity,
+          ),
+        )
         .toList(growable: false);
   }
 
   Future<List<RecentSale>> _recentSales() async {
-    final sales = await (_db.select(_db.sales)
-          ..orderBy([
-            (s) => OrderingTerm(expression: s.date, mode: OrderingMode.desc),
-          ])
-          ..limit(5))
-        .get();
+    final sales =
+        await (_db.select(_db.sales)
+              ..orderBy([
+                (s) =>
+                    OrderingTerm(expression: s.date, mode: OrderingMode.desc),
+              ])
+              ..limit(5))
+            .get();
     if (sales.isEmpty) return const [];
 
     final saleIds = sales.map((s) => s.id).toList();
-    final customerIds =
-        sales.map((s) => s.customerId).whereType<String>().toSet().toList();
+    final customerIds = sales
+        .map((s) => s.customerId)
+        .whereType<String>()
+        .toSet()
+        .toList();
 
     // Lignes des 5 ventes seulement (borné), regroupées par vente.
-    final items = await (_db.select(_db.saleItems)
-          ..where((i) => i.saleId.isIn(saleIds)))
-        .get();
+    final items = await (_db.select(
+      _db.saleItems,
+    )..where((i) => i.saleId.isIn(saleIds))).get();
     final itemsBySale = <String, List<SaleItem>>{};
     for (final it in items) {
       itemsBySale.putIfAbsent(it.saleId, () => []).add(it);
@@ -129,27 +145,31 @@ class DriftDashboardRepository implements DashboardRepository {
 
     final customerNames = <String, String>{};
     if (customerIds.isNotEmpty) {
-      final custs = await (_db.select(_db.customers)
-            ..where((c) => c.id.isIn(customerIds)))
-          .get();
+      final custs = await (_db.select(
+        _db.customers,
+      )..where((c) => c.id.isIn(customerIds))).get();
       for (final c in custs) {
         customerNames[c.id] = c.name;
       }
     }
 
-    return sales.map((s) {
-      final its = itemsBySale[s.id] ?? const [];
-      final first = its.isNotEmpty ? its.first.label : 'Vente';
-      final extra = its.length > 1 ? ' +${its.length - 1}' : '';
-      return RecentSale(
-        title: '$first$extra',
-        subtitle: s.customerId != null
-            ? (customerNames[s.customerId] ?? 'Client')
-            : 'Client comptoir',
-        date: s.date,
-        amount: s.totalAmount,
-        paid: s.amountPaid >= s.totalAmount,
-      );
-    }).toList(growable: false);
+    return sales
+        .map((s) {
+          final its = itemsBySale[s.id] ?? const [];
+          final first = its.isNotEmpty ? its.first.label : 'Vente';
+          final extra = its.length > 1 ? ' +${its.length - 1}' : '';
+          return RecentSale(
+            id: s.id,
+            title: '$first$extra',
+            subtitle: s.customerId != null
+                ? (customerNames[s.customerId] ?? 'Client')
+                : 'Client comptoir',
+            date: s.date,
+            amount: s.totalAmount,
+            paid: s.amountPaid >= s.totalAmount,
+            isCancelled: s.isCancelled,
+          );
+        })
+        .toList(growable: false);
   }
 }

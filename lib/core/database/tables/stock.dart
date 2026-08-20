@@ -29,10 +29,10 @@ class StockMovements extends Table {
   IntColumn get type => intEnum<StockMovementType>()();
 
   /// Quantité du mouvement : positive pour une entrée, négative pour une sortie.
-  RealColumn get quantity => real()();
+  IntColumn get quantity => integer()();
 
   /// Coût unitaire du mouvement (GNF) — utilisé pour recalculer le CMP.
-  RealColumn get unitCost => real().withDefault(const Constant(0))();
+  IntColumn get unitCost => integer().withDefault(const Constant(0))();
 
   /// Référence de la pièce d'origine (vente, achat…).
   TextColumn get sourceReference => text().nullable()();

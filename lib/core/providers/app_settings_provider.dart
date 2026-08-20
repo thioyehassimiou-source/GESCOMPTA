@@ -1,0 +1,212 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../theme/app_palette.dart';
+
+final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
+  throw UnimplementedError('override SharedPreferences in main.dart');
+});
+
+class AppSettings {
+  const AppSettings({
+    required this.isSetupCompleted,
+    required this.businessName,
+    required this.currency,
+    required this.businessEmail,
+    required this.businessNif,
+    required this.businessAddress,
+    required this.logoPath,
+    required this.businessDomain,
+    required this.businessPhone,
+    required this.paletteId,
+  });
+
+  final bool isSetupCompleted;
+  final String businessName;
+  final String currency;
+  final String businessEmail;
+  final String businessNif;
+  final String businessAddress;
+  final String? logoPath;
+  final String? businessDomain;
+
+  /// Téléphone du commerce, imprimé sur les reçus.
+  final String businessPhone;
+
+  /// Identifiant du template visuel choisi ([AppPalette.id]).
+  final String paletteId;
+
+  AppSettings copyWith({
+    bool? isSetupCompleted,
+    String? businessName,
+    String? currency,
+    String? businessEmail,
+    String? businessNif,
+    String? businessAddress,
+    String? logoPath,
+    String? businessDomain,
+    String? businessPhone,
+    String? paletteId,
+  }) {
+    return AppSettings(
+      isSetupCompleted: isSetupCompleted ?? this.isSetupCompleted,
+      businessName: businessName ?? this.businessName,
+      currency: currency ?? this.currency,
+      businessEmail: businessEmail ?? this.businessEmail,
+      businessNif: businessNif ?? this.businessNif,
+      businessAddress: businessAddress ?? this.businessAddress,
+      logoPath: logoPath ?? this.logoPath,
+      businessDomain: businessDomain ?? this.businessDomain,
+      businessPhone: businessPhone ?? this.businessPhone,
+      paletteId: paletteId ?? this.paletteId,
+    );
+  }
+}
+
+// Riverpod 3 compatible – uses Notifier<T> instead of deprecated StateNotifier.
+final appSettingsProvider = NotifierProvider<AppSettingsNotifier, AppSettings>(
+  AppSettingsNotifier.new,
+);
+
+class AppSettingsNotifier extends Notifier<AppSettings> {
+  static const _kIsSetupCompleted = 'is_setup_completed';
+  static const _kBusinessName = 'business_name';
+  static const _kCurrency = 'business_currency';
+  static const _kBusinessEmail = 'business_email';
+  static const _kBusinessNif = 'business_nif';
+  static const _kBusinessAddress = 'business_address';
+  static const _kLogoPath = 'logo_path';
+  static const _kBusinessDomain = 'business_domain';
+  static const _kBusinessPhone = 'business_phone';
+  static const _kPaletteId = 'business_palette';
+
+  @override
+  AppSettings build() {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    return AppSettings(
+      isSetupCompleted: prefs.getBool(_kIsSetupCompleted) ?? false,
+      businessName: prefs.getString(_kBusinessName) ?? 'Ma Boutique',
+      currency: prefs.getString(_kCurrency) ?? 'GNF',
+      businessEmail: prefs.getString(_kBusinessEmail) ?? 'contact@boutique.gn',
+      businessNif: prefs.getString(_kBusinessNif) ?? '',
+      businessAddress: prefs.getString(_kBusinessAddress) ?? '',
+      logoPath: prefs.getString(_kLogoPath),
+      businessDomain: prefs.getString(_kBusinessDomain),
+      businessPhone: prefs.getString(_kBusinessPhone) ?? '',
+      paletteId: prefs.getString(_kPaletteId) ?? AppPalette.fallback.id,
+    );
+  }
+
+  SharedPreferences get _prefs => ref.read(sharedPreferencesProvider);
+
+  Future<void> updateSettings({
+    String? businessName,
+    String? currency,
+    String? businessEmail,
+    String? businessNif,
+    String? businessAddress,
+    String? logoPath,
+    String? businessDomain,
+    String? businessPhone,
+    String? paletteId,
+  }) async {
+    if (businessName != null) {
+      await _prefs.setString(_kBusinessName, businessName);
+    }
+    if (currency != null) {
+      await _prefs.setString(_kCurrency, currency);
+    }
+    if (businessEmail != null) {
+      await _prefs.setString(_kBusinessEmail, businessEmail);
+    }
+    if (businessNif != null) {
+      await _prefs.setString(_kBusinessNif, businessNif);
+    }
+    if (businessAddress != null) {
+      await _prefs.setString(_kBusinessAddress, businessAddress);
+    }
+    if (logoPath != null) {
+      await _prefs.setString(_kLogoPath, logoPath);
+    }
+    if (businessDomain != null) {
+      await _prefs.setString(_kBusinessDomain, businessDomain);
+    }
+
+    state = state.copyWith(
+      businessName: businessName,
+      currency: currency,
+      businessEmail: businessEmail,
+      businessNif: businessNif,
+      businessAddress: businessAddress,
+      logoPath: logoPath,
+      businessDomain: businessDomain,
+      businessPhone: businessPhone,
+      paletteId: paletteId,
+    );
+  }
+
+  Future<void> completeSetup({
+    required String businessName,
+    required String currency,
+    String? logoPath,
+    String? businessDomain,
+    String? businessPhone,
+    String? paletteId,
+  }) async {
+    await _prefs.setBool(_kIsSetupCompleted, true);
+    await _prefs.setString(_kBusinessName, businessName);
+    await _prefs.setString(_kCurrency, currency);
+    if (logoPath != null) {
+      await _prefs.setString(_kLogoPath, logoPath);
+    }
+    if (businessDomain != null) {
+      await _prefs.setString(_kBusinessDomain, businessDomain);
+    }
+    if (businessPhone != null) {
+      await _prefs.setString(_kBusinessPhone, businessPhone);
+    }
+
+    state = state.copyWith(
+      isSetupCompleted: true,
+      businessName: businessName,
+      currency: currency,
+      logoPath: logoPath,
+      businessDomain: businessDomain,
+      businessPhone: businessPhone,
+      // Si aucune palette fournie, on garde la valeur par défaut (fallback).
+      paletteId: paletteId,
+    );
+  }
+
+  /// Permet de changer uniquement la palette après la configuration initiale.
+  Future<void> updatePalette(String paletteId) async {
+    await _prefs.setString(_kPaletteId, paletteId);
+    state = state.copyWith(paletteId: paletteId);
+  }
+
+  Future<void> resetSetup() async {
+    await _prefs.remove(_kIsSetupCompleted);
+    await _prefs.remove(_kBusinessName);
+    await _prefs.remove(_kCurrency);
+    await _prefs.remove(_kBusinessEmail);
+    await _prefs.remove(_kBusinessNif);
+    await _prefs.remove(_kBusinessAddress);
+    await _prefs.remove(_kLogoPath);
+    await _prefs.remove(_kBusinessDomain);
+    await _prefs.remove(_kBusinessPhone);
+    await _prefs.remove(_kPaletteId);
+
+    state = AppSettings(
+      isSetupCompleted: false,
+      businessName: 'Ma Boutique',
+      currency: 'GNF',
+      businessEmail: 'contact@boutique.gn',
+      businessNif: '',
+      businessAddress: '',
+      logoPath: null,
+      businessDomain: null,
+      businessPhone: '',
+      paletteId: AppPalette.fallback.id,
+    );
+  }
+}

@@ -9,20 +9,24 @@ import '../domain/repositories/dashboard_repository.dart';
 /// Une vente récente, prête à l'affichage (langage commerçant).
 class RecentSaleView {
   const RecentSaleView({
+    required this.id,
     required this.title,
     required this.subtitle,
     required this.icon,
     required this.date,
     required this.amount,
     required this.paid,
+    required this.isCancelled,
   });
 
+  final String id;
   final String title;
   final String subtitle;
   final IconData icon;
   final DateTime date;
   final int amount;
   final bool paid;
+  final bool isCancelled;
 }
 
 /// Toutes les données de l'écran Accueil. Les agrégats viennent d'un
@@ -40,6 +44,9 @@ class DashboardData {
     required this.salesGrowth,
     required this.profitGrowth,
     required this.weeklyGrowth,
+    this.supplierDebt = 0,
+    this.avgTicket,
+    this.creditRate,
   });
 
   final int todaySales;
@@ -54,6 +61,11 @@ class DashboardData {
   final double? salesGrowth;
   final double? profitGrowth;
   final double? weeklyGrowth;
+
+  /// Nouveaux indicateurs pour le dashboard enrichi.
+  final int supplierDebt;
+  final double? avgTicket;
+  final double? creditRate;
 }
 
 final dashboardRepositoryProvider = Provider<DashboardRepository>(
@@ -61,7 +73,9 @@ final dashboardRepositoryProvider = Provider<DashboardRepository>(
 );
 
 final dashboardDataProvider = FutureProvider<DashboardData>((ref) async {
-  final snapshot = await ref.watch(dashboardRepositoryProvider).load(DateTime.now());
+  final snapshot = await ref
+      .watch(dashboardRepositoryProvider)
+      .load(DateTime.now());
 
   double? growth(int current, int previous) =>
       previous <= 0 ? null : (current - previous) / previous * 100;
@@ -73,17 +87,18 @@ final dashboardDataProvider = FutureProvider<DashboardData>((ref) async {
     owedCount: snapshot.owedCount,
     cashAvailable: snapshot.cashAvailable,
     lowStock: snapshot.lowStock,
-    recentSales: [
-      for (final r in snapshot.recentSales)
-        RecentSaleView(
-          title: r.title,
-          subtitle: r.subtitle,
-          icon: Icons.shopping_bag_outlined,
-          date: r.date,
-          amount: r.amount,
-          paid: r.paid,
-        ),
-    ],
+    recentSales: snapshot.recentSales.map((s) {
+      return RecentSaleView(
+        id: s.id,
+        title: s.title,
+        subtitle: s.subtitle,
+        icon: Icons.shopping_bag_outlined,
+        date: s.date,
+        amount: s.amount,
+        paid: s.paid,
+        isCancelled: s.isCancelled,
+      );
+    }).toList(),
     salesGrowth: growth(snapshot.todaySales, snapshot.yesterdaySales),
     profitGrowth: growth(snapshot.todayProfit, snapshot.yesterdayProfit),
     weeklyGrowth: growth(snapshot.thisWeekSales, snapshot.prevWeekSales),

@@ -24,20 +24,20 @@ class CartLine {
   final String name;
   final String unit;
   final int unitPrice;
-  final double quantity;
-  final double availableStock;
+  final int quantity;
+  final int availableStock;
 
-  int get lineTotal => (unitPrice * quantity).round();
+  int get lineTotal => unitPrice * quantity;
   bool get exceedsStock => quantity > availableStock;
 
-  CartLine copyWith({int? unitPrice, double? quantity}) => CartLine(
-        productId: productId,
-        name: name,
-        unit: unit,
-        unitPrice: unitPrice ?? this.unitPrice,
-        quantity: quantity ?? this.quantity,
-        availableStock: availableStock,
-      );
+  CartLine copyWith({int? unitPrice, int? quantity}) => CartLine(
+    productId: productId,
+    name: name,
+    unit: unit,
+    unitPrice: unitPrice ?? this.unitPrice,
+    quantity: quantity ?? this.quantity,
+    availableStock: availableStock,
+  );
 }
 
 /// État de l'écran Vendre.
@@ -46,12 +46,14 @@ class SaleCartState {
     this.lines = const [],
     this.method = PaymentMethod.cash,
     this.customerName = '',
+    this.customerPhone = '',
     this.submitting = false,
   });
 
   final List<CartLine> lines;
   final PaymentMethod method;
   final String customerName;
+  final String customerPhone;
   final bool submitting;
 
   int get total => lines.fold(0, (s, l) => s + l.lineTotal);
@@ -63,14 +65,15 @@ class SaleCartState {
     List<CartLine>? lines,
     PaymentMethod? method,
     String? customerName,
+    String? customerPhone,
     bool? submitting,
-  }) =>
-      SaleCartState(
-        lines: lines ?? this.lines,
-        method: method ?? this.method,
-        customerName: customerName ?? this.customerName,
-        submitting: submitting ?? this.submitting,
-      );
+  }) => SaleCartState(
+    lines: lines ?? this.lines,
+    method: method ?? this.method,
+    customerName: customerName ?? this.customerName,
+    customerPhone: customerPhone ?? this.customerPhone,
+    submitting: submitting ?? this.submitting,
+  );
 }
 
 /// Pilote l'écran Vendre : gère le panier et déclenche le moteur.
@@ -87,19 +90,21 @@ class SaleCartController extends Notifier<SaleCartState> {
       final line = lines[index];
       lines[index] = line.copyWith(quantity: line.quantity + 1);
     } else {
-      lines.add(CartLine(
-        productId: product.id,
-        name: product.name,
-        unit: product.unit,
-        unitPrice: product.salePrice,
-        quantity: 1,
-        availableStock: product.stockQuantity,
-      ));
+      lines.add(
+        CartLine(
+          productId: product.id,
+          name: product.name,
+          unit: product.unit,
+          unitPrice: product.salePrice,
+          quantity: 1,
+          availableStock: product.stockQuantity,
+        ),
+      );
     }
     state = state.copyWith(lines: lines);
   }
 
-  void setQuantity(int index, double quantity) {
+  void setQuantity(int index, int quantity) {
     if (quantity <= 0) return removeLine(index);
     final lines = [...state.lines];
     lines[index] = lines[index].copyWith(quantity: quantity);
@@ -117,10 +122,14 @@ class SaleCartController extends Notifier<SaleCartState> {
     state = state.copyWith(lines: lines);
   }
 
-  void setMethod(PaymentMethod method) => state = state.copyWith(method: method);
+  void setMethod(PaymentMethod method) =>
+      state = state.copyWith(method: method);
 
   void setCustomerName(String name) =>
       state = state.copyWith(customerName: name);
+
+  void setCustomerPhone(String phone) =>
+      state = state.copyWith(customerPhone: phone);
 
   void clear() => state = const SaleCartState();
 
@@ -130,7 +139,8 @@ class SaleCartController extends Notifier<SaleCartState> {
     if (state.isEmpty) return const RecordSaleFailure(EmptySaleError());
     if (state.submitting) {
       return const RecordSaleFailure(
-          UnexpectedSaleError('Enregistrement déjà en cours'));
+        UnexpectedSaleError('Enregistrement déjà en cours'),
+      );
     }
 
     state = state.copyWith(submitting: true);
@@ -141,7 +151,9 @@ class SaleCartController extends Notifier<SaleCartState> {
         if (name.isEmpty) {
           return const RecordSaleFailure(CreditRequiresCustomerError());
         }
-        customerId = await ref.read(customerRepositoryProvider).create(name);
+        customerId = await ref
+            .read(customerRepositoryProvider)
+            .getOrCreate(name, phone: state.customerPhone);
       }
 
       final draft = SaleDraft(

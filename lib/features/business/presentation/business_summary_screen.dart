@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/format/formatters.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/app_card.dart';
 import '../application/business_providers.dart';
 
 class BusinessSummaryScreen extends ConsumerWidget {
@@ -11,53 +15,64 @@ class BusinessSummaryScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(businessSummaryProvider);
-    final theme = Theme.of(context);
     final monthName = _monthLabel(DateTime.now());
 
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(AppSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Mon commerce', style: theme.textTheme.headlineSmall),
-          const SizedBox(height: 4),
-          Text(
-            'Comment va votre boutique, en clair. Mise à jour automatique à '
-            'chaque vente.',
-            style: theme.textTheme.bodyMedium
-                ?.copyWith(color: theme.colorScheme.outline),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Bilan', style: AppTypography.headlineLg),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'Performances et indicateurs clés en temps réel.',
+                    style: AppTypography.bodyMd.copyWith(
+                      color: context.colors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.sm,
+                ),
+                decoration: BoxDecoration(
+                  color: context.colors.primaryContainer.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today,
+                      size: 16,
+                      color: context.colors.primary,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(
+                      monthName.toUpperCase(),
+                      style: AppTypography.labelMd.copyWith(
+                        color: context.colors.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.xl),
           Expanded(
             child: async.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(child: Text('Erreur : $e')),
-              data: (s) => ListView(
-                children: [
-                  _SummaryLine(
-                    emoji: '💰',
-                    title: 'Ventes de $monthName',
-                    value: formatGnf(s.monthSales),
-                  ),
-                  _SummaryLine(
-                    emoji: '📈',
-                    title: 'Bénéfice estimé de $monthName',
-                    value: formatGnf(s.monthProfit),
-                    highlight: true,
-                  ),
-                  _SummaryLine(
-                    emoji: '💵',
-                    title: 'Argent encaissé ce mois',
-                    value: formatGnf(s.cashCollectedThisMonth),
-                  ),
-                  _SummaryLine(
-                    emoji: '👥',
-                    title: 'Ce que les clients me doivent',
-                    value: formatGnf(s.owedToMe),
-                  ),
-                  const SizedBox(height: 24),
-                  _AccountantCard(),
-                ],
+              data: (s) => SingleChildScrollView(
+                child: Column(children: [_buildMetricsGrid(s, monthName)]),
               ),
             ),
           ),
@@ -66,76 +81,138 @@ class BusinessSummaryScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildMetricsGrid(dynamic s, String monthName) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final crossAxisCount = constraints.maxWidth > 800 ? 2 : 1;
+        final childAspectRatio = constraints.maxWidth > 800 ? 2.5 : 3.5;
+
+        return GridView.count(
+          crossAxisCount: crossAxisCount,
+          crossAxisSpacing: AppSpacing.lg,
+          mainAxisSpacing: AppSpacing.lg,
+          childAspectRatio: childAspectRatio,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          children: [
+            _MetricBentoCard(
+              title: 'Ventes du mois',
+              amount: formatGnf(s.monthSales),
+              icon: Icons.payments_outlined,
+              color: context.colors.primary,
+              subtitle: 'Chiffre d\'affaires brut',
+            ),
+            _MetricBentoCard(
+              title: 'Bénéfice estimé',
+              amount: formatGnf(s.monthProfit),
+              icon: Icons.trending_up,
+              color: context.colors.primaryContainer,
+              subtitle: 'Marge brute générée',
+              isHighlight: true,
+            ),
+            _MetricBentoCard(
+              title: 'Argent encaissé',
+              amount: formatGnf(s.cashCollectedThisMonth),
+              icon: Icons.account_balance_wallet_outlined,
+              color: context.colors.secondary,
+              subtitle: 'Trésorerie réelle perçue',
+            ),
+            _MetricBentoCard(
+              title: 'Créances clients',
+              amount: formatGnf(s.owedToMe),
+              icon: Icons.group_outlined,
+              color: context.colors.error,
+              subtitle: 'Total de l\'argent dehors',
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   String _monthLabel(DateTime d) {
     const months = [
-      'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet',
-      'août', 'septembre', 'octobre', 'novembre', 'décembre'
+      'janvier',
+      'février',
+      'mars',
+      'avril',
+      'mai',
+      'juin',
+      'juillet',
+      'août',
+      'septembre',
+      'octobre',
+      'novembre',
+      'décembre',
     ];
     return months[d.month - 1];
   }
 }
 
-class _SummaryLine extends StatelessWidget {
-  const _SummaryLine({
-    required this.emoji,
+class _MetricBentoCard extends StatelessWidget {
+  const _MetricBentoCard({
     required this.title,
-    required this.value,
-    this.highlight = false,
+    required this.amount,
+    required this.icon,
+    required this.color,
+    required this.subtitle,
+    this.isHighlight = false,
   });
 
-  final String emoji;
   final String title;
-  final String value;
-  final bool highlight;
+  final String amount;
+  final IconData icon;
+  final Color color;
+  final String subtitle;
+  final bool isHighlight;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      color: highlight
-          ? theme.colorScheme.primaryContainer
-          : theme.colorScheme.surfaceContainerHighest,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-        child: Row(
-          children: [
-            Text(emoji, style: const TextStyle(fontSize: 24)),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(title, style: theme.textTheme.titleMedium),
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
-            Text(
-              value,
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold),
+            child: Icon(icon, color: color, size: 28),
+          ),
+          const SizedBox(width: AppSpacing.lg),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  title,
+                  style: AppTypography.bodyLg.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: context.colors.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  amount,
+                  style: AppTypography.headlineLg.copyWith(
+                    color: isHighlight ? color : context.colors.onSurface,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  subtitle,
+                  style: AppTypography.bodySm.copyWith(
+                    color: context.colors.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Renvoie discrètement vers l'espace comptable, sans jargon dans le corps.
-class _AccountantCard extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: theme.dividerColor),
-      ),
-      child: ListTile(
-        leading: const Icon(Icons.description_outlined),
-        title: const Text('Vous avez un comptable ?'),
-        subtitle: const Text(
-          'GESCOMPTA prépare tout seul les documents officiels dont il a besoin.',
-        ),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () => context.go('/reglages/espace-comptable'),
+          ),
+        ],
       ),
     );
   }

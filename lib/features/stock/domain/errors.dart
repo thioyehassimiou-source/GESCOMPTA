@@ -41,5 +41,5 @@ class UnexpectedProductError extends ProductError {
   final String detail;
   @override
   String get message =>
-      'Une erreur est survenue, le produit n\'a pas été enregistré.';
+      'Une erreur est survenue, le produit n\'a pas été enregistré. Détail: $detail';
 }

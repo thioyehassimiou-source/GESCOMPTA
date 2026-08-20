@@ -29,7 +29,10 @@ class AppSearchBar extends StatelessWidget {
         ),
         filled: true,
         fillColor: theme.colorScheme.surfaceContainerLow,
-        contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.base),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.base,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.full),
           borderSide: BorderSide.none,

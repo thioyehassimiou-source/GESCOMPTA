@@ -8,45 +8,50 @@ class AppChip extends StatelessWidget {
   final String label;
   final AppChipStatus status;
 
-  const AppChip({
-    super.key,
-    required this.label,
-    required this.status,
-  });
+  const AppChip({super.key, required this.label, required this.status});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     Color backgroundColor;
     Color textColor;
     Color dotColor;
 
     switch (status) {
       case AppChipStatus.success:
-        backgroundColor = theme.colorScheme.primaryContainer.withValues(alpha: 0.2);
+        backgroundColor = theme.colorScheme.primaryContainer.withValues(
+          alpha: 0.2,
+        );
         textColor = theme.colorScheme.primary;
         dotColor = theme.colorScheme.primary;
         break;
       case AppChipStatus.warning:
-        backgroundColor = theme.colorScheme.tertiaryContainer.withValues(alpha: 0.6);
-        textColor = theme.colorScheme.onTertiaryContainer;
-        dotColor = theme.colorScheme.tertiary;
+        backgroundColor = Colors.orange.withValues(alpha: 0.15);
+        textColor = Colors.orange[800]!;
+        dotColor = Colors.orange;
         break;
       case AppChipStatus.error:
-        backgroundColor = theme.colorScheme.errorContainer.withValues(alpha: 0.4);
+        backgroundColor = theme.colorScheme.errorContainer.withValues(
+          alpha: 0.4,
+        );
         textColor = theme.colorScheme.onErrorContainer;
         dotColor = theme.colorScheme.error;
         break;
       case AppChipStatus.neutral:
-        backgroundColor = theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4);
+        backgroundColor = theme.colorScheme.surfaceContainerHighest.withValues(
+          alpha: 0.4,
+        );
         textColor = theme.colorScheme.onSurfaceVariant;
         dotColor = theme.colorScheme.outline;
         break;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base, vertical: 2.0),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.base,
+        vertical: 2.0,
+      ),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(AppRadius.full),
@@ -57,10 +62,7 @@ class AppChip extends StatelessWidget {
           Container(
             width: 6,
             height: 6,
-            decoration: BoxDecoration(
-              color: dotColor,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
           ),
           const SizedBox(width: AppSpacing.xs),
           Text(
@@ -84,16 +86,12 @@ class AppBadge extends StatelessWidget {
   final String text;
   final AppChipStatus status;
 
-  const AppBadge({
-    super.key,
-    required this.text,
-    required this.status,
-  });
+  const AppBadge({super.key, required this.text, required this.status});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     Color backgroundColor;
     Color textColor;
 
@@ -117,7 +115,10 @@ class AppBadge extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base, vertical: 2.0),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.base,
+        vertical: 2.0,
+      ),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(AppRadius.full),

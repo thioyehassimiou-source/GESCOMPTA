@@ -14,6 +14,7 @@ class Product {
     required this.lowStockThreshold,
     required this.weightedAverageCost,
     required this.isActive,
+    this.imageUrl,
     required this.createdAt,
   });
 
@@ -32,16 +33,16 @@ class Product {
   /// Prix de vente unitaire (GNF).
   final int salePrice;
 
-  /// Quantité actuellement en stock (fractionnaire possible pour le vrac).
-  final double stockQuantity;
+  /// Quantité actuellement en stock.
+  final int stockQuantity;
 
   /// Seuil d'alerte de stock faible.
-  final double lowStockThreshold;
+  final int lowStockThreshold;
 
-  /// Coût moyen pondéré courant (GNF) — base de valorisation SYSCOHADA,
-  /// jamais montré au commerçant.
-  final double weightedAverageCost;
+  /// Coût moyen pondéré courant (GNF) — base de valorisation.
+  final int weightedAverageCost;
 
   final bool isActive;
+  final String? imageUrl;
   final DateTime createdAt;
 }

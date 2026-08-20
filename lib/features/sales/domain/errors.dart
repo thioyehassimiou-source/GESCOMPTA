@@ -49,16 +49,14 @@ class InsufficientStockError extends SaleError {
     required this.unit,
   });
   final String productLabel;
-  final double available;
-  final double requested;
+  final int available;
+  final int requested;
   final String unit;
 
   @override
   String get message {
-    String q(double v) =>
-        v == v.roundToDouble() ? v.toInt().toString() : v.toString();
     return 'Stock insuffisant pour « $productLabel » : il reste '
-        '${q(available)} $unit, vous en vendez ${q(requested)}.';
+        '$available $unit, vous en vendez $requested.';
   }
 }
 
@@ -94,7 +92,10 @@ class UnexpectedSaleError extends SaleError {
 /// (Σ débits ≠ Σ crédits). Ne devrait jamais survenir ; si c'est le cas, la
 /// transaction est annulée pour ne jamais déséquilibrer les livres.
 class UnbalancedEntryError extends SaleError {
-  const UnbalancedEntryError({required this.totalDebit, required this.totalCredit});
+  const UnbalancedEntryError({
+    required this.totalDebit,
+    required this.totalCredit,
+  });
   final int totalDebit;
   final int totalCredit;
   @override

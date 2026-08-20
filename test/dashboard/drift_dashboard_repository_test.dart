@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gescompta/core/database/database.dart';
-import 'package:gescompta/features/dashboard/data/repositories/drift_dashboard_repository.dart';
+import 'package:nmashop/core/database/database.dart';
+import 'package:nmashop/features/dashboard/data/repositories/drift_dashboard_repository.dart';
 
 /// Vérifie que les indicateurs de l'accueil sont calculés correctement par les
 /// agrégats SQL (mêmes chiffres que l'ancien calcul en RAM), en injectant un
@@ -39,9 +39,9 @@ void main() {
       int paid,
       String productId,
       String label,
-      double qty,
+      int qty,
       int unitPrice,
-      double unitCost,
+      int unitCost,
       int lineTotal,
     ) async {
       await db.into(db.sales).insert(SalesCompanion.insert(
@@ -72,31 +72,6 @@ void main() {
     // S3 cette semaine (plus ancienne) : payée.
     await sale('s3', DateTime(2026, 7, 6, 10), 7000, 7000, 'B', 'Riz', 1, 7000,
         3000, 7000);
-
-    // Trésorerie : une écriture avec une ligne au débit d'un compte de classe 5.
-    final cashCode = (await (db.select(db.accounts)
-                  ..where((a) => a.code.like('5%'))
-                  ..limit(1))
-                .getSingleOrNull())
-            ?.code ??
-        '571';
-    await db.into(db.accounts).insertOnConflictUpdate(AccountsCompanion.insert(
-          code: cashCode,
-          label: 'Caisse',
-          accountClass: 5,
-        ));
-    await db.into(db.journalEntries).insert(JournalEntriesCompanion.insert(
-          id: 'je1',
-          reference: 'EC-1',
-          description: 'Encaissement S1',
-        ));
-    await db.into(db.journalLines).insert(JournalLinesCompanion.insert(
-          id: 'jl1',
-          entryId: 'je1',
-          accountCode: cashCode,
-          label: 'Caisse',
-          debit: const Value(30000),
-        ));
   });
 
   tearDown(() async => db.close());
@@ -111,10 +86,11 @@ void main() {
     // Cette semaine = S1 + S2 + S3 ; semaine précédente = aucune.
     expect(s.thisWeekSales, 57000);
     expect(s.prevWeekSales, 0);
-    // Créances : seule S2 doit (15000) ; owed somme tous les restes.
+    // Créances : seule S2 doit (15000).
     expect(s.owed, 15000);
     expect(s.owedCount, 1);
-    expect(s.cashAvailable, 30000);
+    // Encaissements = S1(30000) + S2(5000) + S3(7000) = 42000.
+    expect(s.cashAvailable, 42000);
   });
 
   test('bas stock et ventes récentes', () async {

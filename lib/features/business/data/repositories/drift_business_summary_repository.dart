@@ -17,16 +17,18 @@ class DriftBusinessSummaryRepository implements BusinessSummaryRepository {
     // Ventes et encaissements du mois en une seule requête.
     final salesSum = _db.sales.totalAmount.sum();
     final paidSum = _db.sales.amountPaid.sum();
-    final monthRow = await (_db.selectOnly(_db.sales)
-          ..addColumns([salesSum, paidSum])
-          ..where(_db.sales.date.isBiggerOrEqualValue(startOfMonth)))
-        .getSingle();
+    final monthRow =
+        await (_db.selectOnly(_db.sales)
+              ..addColumns([salesSum, paidSum])
+              ..where(_db.sales.date.isBiggerOrEqualValue(startOfMonth) & _db.sales.isCancelled.equals(false)))
+            .getSingle();
 
     // Créances = Σ(total − payé) sur toutes les ventes.
     final owedExpr = (_db.sales.totalAmount - _db.sales.amountPaid).sum();
-    final owed = (await (_db.selectOnly(_db.sales)..addColumns([owedExpr]))
-                .getSingle())
-            .read(owedExpr) ??
+    final owed =
+        (await (_db.selectOnly(
+          _db.sales,
+        )..addColumns([owedExpr])..where(_db.sales.isCancelled.equals(false))).getSingle()).read(owedExpr) ??
         0;
 
     // Bénéfice du mois = Σ(line_total − arrondi(unit_cost × quantity)) par ligne.
@@ -34,13 +36,17 @@ class DriftBusinessSummaryRepository implements BusinessSummaryRepository {
       'COALESCE(SUM(sale_items.line_total - '
       'CAST(round(sale_items.unit_cost * sale_items.quantity) AS INTEGER)), 0)',
     );
-    final monthProfit = (await (_db.selectOnly(_db.saleItems).join([
-      innerJoin(_db.sales, _db.sales.id.equalsExp(_db.saleItems.saleId)),
-    ])
-              ..addColumns([profit])
-              ..where(_db.sales.date.isBiggerOrEqualValue(startOfMonth)))
-            .getSingle())
-        .read(profit) ??
+    final monthProfit =
+        (await (_db.selectOnly(_db.saleItems).join([
+                    innerJoin(
+                      _db.sales,
+                      _db.sales.id.equalsExp(_db.saleItems.saleId),
+                    ),
+                  ])
+                  ..addColumns([profit])
+                  ..where(_db.sales.date.isBiggerOrEqualValue(startOfMonth) & _db.sales.isCancelled.equals(false)))
+                .getSingle())
+            .read(profit) ??
         0;
 
     return BusinessSummary(

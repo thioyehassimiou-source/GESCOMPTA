@@ -40,9 +40,9 @@ class NewSaleLine {
   final String saleId;
   final String productId;
   final String label;
-  final double quantity;
+  final int quantity;
   final int unitPrice;
-  final double unitCost;
+  final int unitCost;
   final int lineTotal;
 }
 

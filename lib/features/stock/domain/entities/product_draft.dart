@@ -14,6 +14,7 @@ class ProductDraft {
     required this.salePrice,
     required this.stockQuantity,
     required this.lowStockThreshold,
+    this.imageUrl,
   });
 
   final String name;
@@ -21,8 +22,9 @@ class ProductDraft {
   final String unit;
   final int purchasePrice;
   final int salePrice;
-  final double stockQuantity;
-  final double lowStockThreshold;
+  final int stockQuantity;
+  final int lowStockThreshold;
+  final String? imageUrl;
 
   /// Validations pures (sans accès base). Retourne la première erreur trouvée,
   /// ou `null` si la saisie est saine.

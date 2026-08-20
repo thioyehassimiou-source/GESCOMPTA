@@ -12,10 +12,7 @@ import '../../domain/repayment_draft.dart';
 import '../../domain/usecases/record_repayment.dart';
 
 class RepaymentDialog extends ConsumerStatefulWidget {
-  const RepaymentDialog({
-    super.key,
-    required this.summary,
-  });
+  const RepaymentDialog({super.key, required this.summary});
 
   final CreditSummary summary;
 
@@ -42,7 +39,9 @@ class _RepaymentDialogState extends ConsumerState<RepaymentDialog> {
   @override
   void initState() {
     super.initState();
-    _amountController = TextEditingController(text: widget.summary.balance.toString());
+    _amountController = TextEditingController(
+      text: widget.summary.balance.toString(),
+    );
     _amount = widget.summary.balance;
     _fetchHistory();
   }
@@ -50,7 +49,9 @@ class _RepaymentDialogState extends ConsumerState<RepaymentDialog> {
   Future<void> _fetchHistory() async {
     try {
       final repository = ref.read(receivablesRepositoryProvider);
-      final history = await repository.getPaymentHistory(widget.summary.customerId);
+      final history = await repository.getPaymentHistory(
+        widget.summary.customerId,
+      );
       if (mounted) {
         setState(() {
           _history = history;
@@ -79,7 +80,8 @@ class _RepaymentDialogState extends ConsumerState<RepaymentDialog> {
     });
   }
 
-  bool get _isValid => _amount != null && _amount! > 0 && _amount! <= widget.summary.balance;
+  bool get _isValid =>
+      _amount != null && _amount! > 0 && _amount! <= widget.summary.balance;
 
   Future<void> _submit() async {
     if (!_isValid) return;
@@ -92,9 +94,9 @@ class _RepaymentDialogState extends ConsumerState<RepaymentDialog> {
         customerId: widget.summary.customerId,
         amount: _amount!,
       );
-      
+
       final result = await useCase(draft);
-      
+
       if (mounted) {
         if (result is RecordRepaymentSuccess) {
           Navigator.of(context).pop();
@@ -135,7 +137,9 @@ class _RepaymentDialogState extends ConsumerState<RepaymentDialog> {
             children: [
               Text(
                 'Reste dû total : ${formatGnf(widget.summary.balance)}',
-                style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: AppSpacing.lg),
               TextFormField(
@@ -143,12 +147,13 @@ class _RepaymentDialogState extends ConsumerState<RepaymentDialog> {
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: InputDecoration(
-                  labelText: 'Montant réglé (GNF)',
+                  labelText: 'Montant réglé (GNF) *',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                   prefixIcon: const Icon(Icons.payments_outlined),
-                  errorText: (_amount != null && _amount! > widget.summary.balance)
+                  errorText:
+                      (_amount != null && _amount! > widget.summary.balance)
                       ? 'Montant supérieur au reste dû'
                       : null,
                 ),
@@ -157,7 +162,9 @@ class _RepaymentDialogState extends ConsumerState<RepaymentDialog> {
               const SizedBox(height: AppSpacing.md),
               Text(
                 'Le paiement sera déduit des ventes les plus anciennes.',
-                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.outline,
+                ),
               ),
               const SizedBox(height: AppSpacing.xl),
               Text(
@@ -166,14 +173,24 @@ class _RepaymentDialogState extends ConsumerState<RepaymentDialog> {
               ),
               const Divider(),
               if (_isLoadingHistory)
-                const Center(child: Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: CircularProgressIndicator(),
-                ))
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: CircularProgressIndicator(),
+                  ),
+                )
               else if (_historyError != null)
-                Text('Erreur: $_historyError', style: TextStyle(color: theme.colorScheme.error))
+                Text(
+                  'Erreur: $_historyError',
+                  style: TextStyle(color: theme.colorScheme.error),
+                )
               else if (_history == null || _history!.isEmpty)
-                Text('Aucun paiement précédent enregistré.', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.outline))
+                Text(
+                  'Aucun paiement précédent enregistré.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.outline,
+                  ),
+                )
               else
                 ListView.builder(
                   shrinkWrap: true,
@@ -184,7 +201,10 @@ class _RepaymentDialogState extends ConsumerState<RepaymentDialog> {
                     return ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.history, size: 20),
-                      title: Text(formatGnf(item.amount), style: const TextStyle(fontWeight: FontWeight.w600)),
+                      title: Text(
+                        formatGnf(item.amount),
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
                       subtitle: Text(formatDateTime(item.date)),
                     );
                   },

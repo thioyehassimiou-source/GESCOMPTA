@@ -2,18 +2,22 @@
 /// décidée par la présentation.
 class RecentSale {
   const RecentSale({
+    required this.id,
     required this.title,
     required this.subtitle,
     required this.date,
     required this.amount,
     required this.paid,
+    required this.isCancelled,
   });
 
+  final String id;
   final String title;
   final String subtitle;
   final DateTime date;
   final int amount;
   final bool paid;
+  final bool isCancelled;
 }
 
 /// Produit sous son seuil d'alerte, réduit à ce qu'affiche l'accueil.
@@ -26,7 +30,7 @@ class LowStockItem {
 
   final String name;
   final String unit;
-  final double stockQuantity;
+  final int stockQuantity;
 }
 
 /// Agrégats de l'écran Accueil, calculés côté SQL (aucune table n'est chargée

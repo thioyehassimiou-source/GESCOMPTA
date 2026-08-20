@@ -9,22 +9,24 @@ class SaleDraftLine {
   });
 
   final String productId;
-  final double quantity;
+  final int quantity;
 
   /// Prix de vente unitaire retenu pour cette vente (GNF) — le commerçant
   /// peut l'ajuster par rapport au prix conseillé.
   final int unitPrice;
 
   /// Total de la ligne (GNF), arrondi à l'entier.
-  int get lineTotal => (unitPrice * quantity).round();
+  int get lineTotal => unitPrice * quantity;
 }
 
 /// Un règlement immédiat (espèces, mobile money ou banque).
 /// Le crédit n'est PAS un tender : il est déduit du reste à payer.
 class PaymentTender {
   const PaymentTender({required this.method, required this.amount})
-      : assert(method != PaymentMethod.credit,
-            'Le crédit n\'est pas un règlement immédiat');
+    : assert(
+        method != PaymentMethod.credit,
+        'Le crédit n\'est pas un règlement immédiat',
+      );
 
   final PaymentMethod method;
   final int amount; // GNF

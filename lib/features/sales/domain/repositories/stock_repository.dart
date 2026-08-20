@@ -12,13 +12,13 @@ class StockExit {
   final String productId;
 
   /// Quantité vendue (positive).
-  final double quantity;
+  final int quantity;
 
   /// Coût unitaire au CMP au moment de la sortie (GNF).
-  final double unitCost;
+  final int unitCost;
 
   /// Nouvelle quantité en stock après la sortie (précalculée par le moteur).
-  final double newStockQuantity;
+  final int newStockQuantity;
 
   final String saleReference;
   final DateTime date;

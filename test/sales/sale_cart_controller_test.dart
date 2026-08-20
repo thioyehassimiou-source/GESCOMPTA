@@ -2,12 +2,12 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gescompta/core/database/database.dart';
-import 'package:gescompta/core/domain/payment_method.dart';
-import 'package:gescompta/core/providers/database_provider.dart';
-import 'package:gescompta/features/sales/application/sale_cart_controller.dart';
-import 'package:gescompta/features/sales/domain/usecases/record_sale.dart';
-import 'package:gescompta/features/stock/domain/entities/product.dart' as catalog;
+import 'package:nmashop/core/database/database.dart';
+import 'package:nmashop/core/domain/payment_method.dart';
+import 'package:nmashop/core/providers/database_provider.dart';
+import 'package:nmashop/features/sales/application/sale_cart_controller.dart';
+import 'package:nmashop/features/sales/domain/usecases/record_sale.dart';
+import 'package:nmashop/features/stock/domain/entities/product.dart' as catalog;
 
 /// Vue catalogue du produit seedé « p1 » (ce que le picker fournit au panier).
 catalog.Product _p1() => catalog.Product(
@@ -61,13 +61,13 @@ void main() {
     expect(result, isA<RecordSaleSuccess>());
     // Panier vidé après succès.
     expect(container.read(saleCartControllerProvider).isEmpty, isTrue);
-    // La vente et son écriture existent en base.
+    // La vente existe en base.
     expect(await db.select(db.sales).get(), hasLength(1));
-    expect(await db.select(db.journalEntries).get(), hasLength(2));
     // Stock décrémenté.
     final p = await (db.select(db.products)..where((t) => t.id.equals('p1')))
         .getSingle();
     expect(p.stockQuantity, 8);
+
   });
 
   test('Vente à crédit sans nom de client : refus', () async {

@@ -11,7 +11,7 @@ import '../../domain/repositories/stock_repository.dart';
 /// du produit est mise à jour dans le même lot (batch) pour limiter les écritures.
 class DriftStockRepository implements StockRepository {
   DriftStockRepository(this._db, {String Function()? idGenerator})
-      : _newId = idGenerator ?? (() => const Uuid().v4());
+    : _newId = idGenerator ?? (() => const Uuid().v4());
 
   final AppDatabase _db;
   final String Function() _newId;

@@ -18,10 +18,11 @@ abstract final class AppSpacing {
   static const double topBarHeight = 64;
 }
 
-/// Rayons d'arrondi de la charte.
+/// Rayons d'arrondi de la charte (SaaS).
 abstract final class AppRadius {
-  static const double sm = 4;
+  static const double xs = 4;
+  static const double sm = 6;
   static const double lg = 8;
-  static const double xl = 12;
+  static const double xl = 12; // Used to be much larger. 12px is maximum for cards.
   static const double full = 9999;
 }

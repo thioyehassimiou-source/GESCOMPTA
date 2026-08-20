@@ -54,12 +54,14 @@ abstract final class AppTypography {
     fontSize: 14,
     height: 20 / 14,
     fontWeight: FontWeight.w600,
+    letterSpacing: 0.1,
   );
 
   static const labelSm = TextStyle(
     fontFamily: fontFamily,
     fontSize: 12,
     height: 18 / 12,
-    fontWeight: FontWeight.w500,
+    fontWeight: FontWeight.w600, // Stronger weight for SaaS labels
+    letterSpacing: 0.5, // Slightly spaced out for uppercase
   );
 }

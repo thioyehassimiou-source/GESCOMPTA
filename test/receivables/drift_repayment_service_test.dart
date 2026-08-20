@@ -1,28 +1,12 @@
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gescompta/core/database/database.dart';
-import 'package:gescompta/core/domain/payment_method.dart';
-import 'package:gescompta/features/receivables/data/services/drift_repayment_service.dart';
-import 'package:gescompta/features/receivables/domain/accounting/syscohada_repayment_posting_policy.dart';
-import 'package:gescompta/features/receivables/domain/errors.dart';
-import 'package:gescompta/features/receivables/domain/repayment_draft.dart';
-import 'package:gescompta/features/receivables/domain/usecases/record_repayment.dart';
-import 'package:gescompta/features/sales/data/repositories/drift_accounting_repository.dart';
-
-Future<int> _debit(AppDatabase db, String code) async {
-  final lines = await (db.select(db.journalLines)
-        ..where((l) => l.accountCode.equals(code)))
-      .get();
-  return lines.fold<int>(0, (s, l) => s + l.debit);
-}
-
-Future<int> _credit(AppDatabase db, String code) async {
-  final lines = await (db.select(db.journalLines)
-        ..where((l) => l.accountCode.equals(code)))
-      .get();
-  return lines.fold<int>(0, (s, l) => s + l.credit);
-}
+import 'package:nmashop/core/database/database.dart';
+import 'package:nmashop/core/domain/payment_method.dart';
+import 'package:nmashop/features/receivables/data/services/drift_repayment_service.dart';
+import 'package:nmashop/features/receivables/domain/errors.dart';
+import 'package:nmashop/features/receivables/domain/repayment_draft.dart';
+import 'package:nmashop/features/receivables/domain/usecases/record_repayment.dart';
 
 void main() {
   late AppDatabase db;
@@ -33,8 +17,6 @@ void main() {
     var seq = 0;
     final service = DriftRepaymentService(
       db: db,
-      accounting: DriftAccountingRepository(db, idGenerator: () => 'a${seq++}'),
-      postingPolicy: const SyscohadaRepaymentPostingPolicy(),
       idGenerator: () => 'r${seq++}',
       clock: () => DateTime(2026, 7, 10),
     );
@@ -61,7 +43,7 @@ void main() {
 
   tearDown(() async => db.close());
 
-  test('remboursement partiel : FIFO, écriture équilibrée, solde diminué',
+  test('remboursement partiel : FIFO, solde diminué, règlements tracés',
       () async {
     // 18000 : solde s1 (15000) puis 3000 sur s2.
     final result = await useCase(const RepaymentDraft(
@@ -82,19 +64,6 @@ void main() {
 
     // Deux règlements tracés (un par vente touchée).
     expect(await db.select(db.creditPayments).get(), hasLength(2));
-
-    // Écriture SYSCOHADA équilibrée : débit 571 (caisse) = crédit 411 = 18000.
-    expect(await _debit(db, '571'), 18000);
-    expect(await _credit(db, '411'), 18000);
-    final entries = await db.select(db.journalEntries).get();
-    expect(entries, hasLength(1));
-  });
-
-  test('remboursement en mobile money : débité au compte 551', () async {
-    await useCase(const RepaymentDraft(
-        customerId: 'c1', amount: 5000, method: PaymentMethod.mobileMoney));
-    expect(await _debit(db, '551'), 5000);
-    expect(await _credit(db, '411'), 5000);
   });
 
   test('montant supérieur à la dette : refus + ROLLBACK complet', () async {
@@ -106,7 +75,6 @@ void main() {
 
     // Rien n'a bougé.
     expect(await db.select(db.creditPayments).get(), isEmpty);
-    expect(await db.select(db.journalLines).get(), isEmpty);
     final s1 = await (db.select(db.sales)..where((s) => s.id.equals('s1')))
         .getSingle();
     expect(s1.amountPaid, 0);
@@ -118,5 +86,17 @@ void main() {
     expect(result, isA<RecordRepaymentFailure>());
     expect((result as RecordRepaymentFailure).error,
         isA<InvalidRepaymentAmountError>());
+  });
+
+  test('remboursement total : solde à zéro', () async {
+    final result = await useCase(const RepaymentDraft(
+        customerId: 'c1', amount: 25000, method: PaymentMethod.cash));
+
+    expect(result, isA<RecordRepaymentSuccess>());
+    final recorded = (result as RecordRepaymentSuccess).repayment;
+    expect(recorded.remainingBalance, 0);
+
+    final payments = await db.select(db.creditPayments).get();
+    expect(payments, hasLength(2)); // un par vente
   });
 }

@@ -13,7 +13,8 @@ class DriftSaleRepository implements SaleRepository {
   Future<String> nextReference(DateTime date) async {
     final year = date.year;
     final count = _db.sales.id.count(
-      filter: _db.sales.date.isBiggerOrEqualValue(DateTime(year)) &
+      filter:
+          _db.sales.date.isBiggerOrEqualValue(DateTime(year)) &
           _db.sales.date.isSmallerThanValue(DateTime(year + 1)),
     );
     final query = _db.selectOnly(_db.sales)..addColumns([count]);
@@ -23,7 +24,9 @@ class DriftSaleRepository implements SaleRepository {
 
   @override
   Future<void> createSale(NewSaleData data) async {
-    await _db.into(_db.sales).insert(
+    await _db
+        .into(_db.sales)
+        .insert(
           SalesCompanion.insert(
             id: data.id,
             reference: data.reference,

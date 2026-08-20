@@ -1,12 +1,12 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gescompta/core/database/database.dart';
-import 'package:gescompta/features/stock/data/repositories/drift_product_catalog_repository.dart';
-import 'package:gescompta/features/stock/domain/entities/product_draft.dart';
-import 'package:gescompta/features/stock/domain/errors.dart';
-import 'package:gescompta/features/stock/domain/usecases/add_product.dart';
-import 'package:gescompta/features/stock/domain/usecases/save_product_result.dart';
-import 'package:gescompta/features/stock/domain/usecases/update_product.dart';
+import 'package:nmashop/core/database/database.dart';
+import 'package:nmashop/features/stock/data/repositories/drift_product_catalog_repository.dart';
+import 'package:nmashop/features/stock/domain/entities/product_draft.dart';
+import 'package:nmashop/features/stock/domain/errors.dart';
+import 'package:nmashop/features/stock/domain/usecases/add_product.dart';
+import 'package:nmashop/features/stock/domain/usecases/save_product_result.dart';
+import 'package:nmashop/features/stock/domain/usecases/update_product.dart';
 
 void main() {
   late AppDatabase db;
@@ -18,8 +18,8 @@ void main() {
     String name = 'Riz',
     int purchasePrice = 8000,
     int salePrice = 10000,
-    double stockQuantity = 25,
-    double lowStockThreshold = 5,
+    int stockQuantity = 25,
+    int lowStockThreshold = 5,
   }) =>
       ProductDraft(
         name: name,

@@ -15,10 +15,7 @@ abstract interface class ReceivablesRepository {
 
 /// Représente un paiement effectué par un client pour régler ses crédits.
 class PaymentHistoryItem {
-  const PaymentHistoryItem({
-    required this.amount,
-    required this.date,
-  });
+  const PaymentHistoryItem({required this.amount, required this.date});
 
   final int amount;
   final DateTime date;

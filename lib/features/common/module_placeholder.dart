@@ -51,8 +51,8 @@ class ModulePlaceholder extends StatelessWidget {
               Chip(
                 avatar: const Icon(Icons.construction, size: 18),
                 label: const Text('Module à venir'),
-                backgroundColor:
-                    theme.colorScheme.secondaryContainer.withValues(alpha: .5),
+                backgroundColor: theme.colorScheme.secondaryContainer
+                    .withValues(alpha: .5),
               ),
             ],
           ),

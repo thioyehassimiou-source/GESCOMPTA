@@ -11,21 +11,41 @@ class AppShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
-      body: Row(
-        children: [
-          const AppSidebar(),
-          Expanded(
-            child: Column(
+    
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 800;
+        
+        if (isMobile) {
+          return Scaffold(
+            backgroundColor: theme.colorScheme.surface,
+            drawer: const Drawer(child: AppSidebar()),
+            body: Column(
               children: [
-                const AppHeader(),
+                const AppHeader(isMobile: true),
                 Expanded(child: child),
               ],
             ),
+          );
+        }
+
+        return Scaffold(
+          backgroundColor: theme.colorScheme.surface,
+          body: Row(
+            children: [
+              const AppSidebar(),
+              Expanded(
+                child: Column(
+                  children: [
+                    const AppHeader(isMobile: false),
+                    Expanded(child: child),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

@@ -21,10 +21,10 @@ class ProductSnapshot {
   final int salePrice;
 
   /// Quantité actuellement en stock.
-  final double stockQuantity;
+  final int stockQuantity;
 
   /// Coût moyen pondéré courant (GNF) — jamais montré au commerçant.
-  final double weightedAverageCost;
+  final int weightedAverageCost;
 
   final bool isActive;
 }

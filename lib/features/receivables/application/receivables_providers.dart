@@ -1,11 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers/database_provider.dart';
-import '../../sales/data/repositories/drift_accounting_repository.dart';
 import '../data/repositories/drift_receivables_repository.dart';
 import '../data/services/drift_repayment_service.dart';
-import '../domain/accounting/repayment_posting_policy.dart';
-import '../domain/accounting/syscohada_repayment_posting_policy.dart';
 import '../domain/credit_summary.dart';
 import '../domain/repositories/receivables_repository.dart';
 import '../domain/services/repayment_service.dart';
@@ -22,16 +19,8 @@ final creditSummariesProvider = StreamProvider<List<CreditSummary>>(
   (ref) => ref.watch(receivablesRepositoryProvider).watchCreditSummaries(),
 );
 
-final repaymentPostingPolicyProvider = Provider<RepaymentPostingPolicy>(
-  (ref) => const SyscohadaRepaymentPostingPolicy(),
-);
-
 final repaymentServiceProvider = Provider<RepaymentService>(
-  (ref) => DriftRepaymentService(
-    db: ref.watch(databaseProvider),
-    accounting: DriftAccountingRepository(ref.watch(databaseProvider)),
-    postingPolicy: ref.watch(repaymentPostingPolicyProvider),
-  ),
+  (ref) => DriftRepaymentService(db: ref.watch(databaseProvider)),
 );
 
 final recordRepaymentUseCaseProvider = Provider<RecordRepaymentUseCase>(

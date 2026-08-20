@@ -25,16 +25,19 @@ class Products extends Table {
   /// Prix de vente unitaire (GNF).
   IntColumn get salePrice => integer().withDefault(const Constant(0))();
 
-  /// Quantité actuellement en stock (peut être fractionnaire pour le vrac).
-  RealColumn get stockQuantity => real().withDefault(const Constant(0))();
+  /// Quantité actuellement en stock (vrac retiré, unités entières uniquement).
+  IntColumn get stockQuantity => integer().withDefault(const Constant(0))();
 
   /// Seuil d'alerte de stock faible.
-  RealColumn get lowStockThreshold => real().withDefault(const Constant(0))();
+  IntColumn get lowStockThreshold => integer().withDefault(const Constant(0))();
 
-  /// Coût moyen pondéré courant (GNF) — base de valorisation SYSCOHADA.
-  RealColumn get weightedAverageCost => real().withDefault(const Constant(0))();
+  /// Coût moyen pondéré courant (GNF) — base de valorisation.
+  IntColumn get weightedAverageCost => integer().withDefault(const Constant(0))();
 
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+
+  /// Chemin ou URL de la photo du produit (facultatif).
+  TextColumn get imageUrl => text().nullable()();
 
   DateTimeColumn get createdAt =>
       dateTime().withDefault(currentDateAndTime)();

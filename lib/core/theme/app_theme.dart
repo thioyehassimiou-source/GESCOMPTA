@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
+import 'app_palette.dart';
 import 'app_spacing.dart';
 import 'app_typography.dart';
 
@@ -8,7 +9,10 @@ import 'app_typography.dart';
 /// ([AppColors], [AppTypography], [AppSpacing]). Interface épurée, lisible sur
 /// matériel modeste.
 class AppTheme {
-  static ThemeData light() {
+  /// Thème clair dérivé du template choisi par le commerçant.
+  static ThemeData light([AppPalette palette = AppPalette.fallback]) {
+    // Use the design-system primary (indigo) instead of the palette seed
+    // so that the sidebar active state, buttons, etc. are always consistent
     const scheme = ColorScheme(
       brightness: Brightness.light,
       primary: AppColors.primary,
@@ -19,69 +23,55 @@ class AppTheme {
       onSecondary: AppColors.onSecondary,
       secondaryContainer: AppColors.secondaryContainer,
       onSecondaryContainer: AppColors.onSecondaryContainer,
-      tertiary: AppColors.tertiary,
-      onTertiary: AppColors.onPrimary,
-      tertiaryContainer: AppColors.tertiaryContainer,
-      onTertiaryContainer: AppColors.tertiaryFixed,
       error: AppColors.error,
       onError: AppColors.onError,
       errorContainer: AppColors.errorContainer,
       onErrorContainer: AppColors.onErrorContainer,
-      surface: AppColors.surface,
+      surface: AppColors.background,
       onSurface: AppColors.onSurface,
-      onSurfaceVariant: AppColors.onSurfaceVariant,
       surfaceContainerLowest: AppColors.surfaceContainerLowest,
       surfaceContainerLow: AppColors.surfaceContainerLow,
       surfaceContainer: AppColors.surfaceContainer,
       surfaceContainerHigh: AppColors.surfaceContainerHigh,
       surfaceContainerHighest: AppColors.surfaceContainerHighest,
+      onSurfaceVariant: AppColors.onSurfaceVariant,
       outline: AppColors.outline,
       outlineVariant: AppColors.outlineVariant,
-      inverseSurface: AppColors.inverseSurface,
-      onInverseSurface: AppColors.inverseOnSurface,
-      inversePrimary: AppColors.inversePrimary,
     );
-    return _base(scheme);
+    return _base(scheme, palette);
   }
 
-  /// Thème sombre : palette gris profond/SaaS moderne.
-  static ThemeData dark() {
+  /// Thème sombre
+  static ThemeData dark([AppPalette palette = AppPalette.fallback]) {
     const scheme = ColorScheme(
       brightness: Brightness.dark,
-      primary: AppColors.primary,
-      onPrimary: AppColors.onPrimary,
-      primaryContainer: AppColors.primaryContainer,
-      onPrimaryContainer: AppColors.onPrimaryContainer,
-      secondary: AppColors.secondary,
-      onSecondary: AppColors.onSecondary,
-      secondaryContainer: Color(0xFF334155), // gris ardoise
-      onSecondaryContainer: Color(0xFFF8FAFC),
-      tertiary: AppColors.tertiary,
-      onTertiary: AppColors.onPrimary,
-      tertiaryContainer: AppColors.tertiaryContainer,
-      onTertiaryContainer: AppColors.tertiaryFixed,
-      error: AppColors.error,
-      onError: AppColors.onError,
+      primary: Color(0xFF6366F1), // Indigo 500
+      onPrimary: Color(0xFFFFFFFF),
+      primaryContainer: Color(0xFF3730A3), // Indigo 800
+      onPrimaryContainer: Color(0xFFE0E7FF),
+      secondary: Color(0xFF94A3B8),
+      onSecondary: Color(0xFF020617),
+      secondaryContainer: Color(0xFF1E293B), // Slate 800
+      onSecondaryContainer: Color(0xFFF1F5F9),
+      error: Color(0xFFF87171),
+      onError: Color(0xFF450A0A),
       errorContainer: Color(0xFF7F1D1D),
-      onErrorContainer: Color(0xFFFEF2F2),
-      surface: Color(0xFF0F172A), // Tailwind Slate 900
+      onErrorContainer: Color(0xFFFEE2E2),
+      surface: Color(0xFF0B1120), // Very deep midnight blue
       onSurface: Color(0xFFF8FAFC),
-      onSurfaceVariant: Color(0xFF94A3B8), // Slate 400
-      surfaceContainerLowest: Color(0xFF1E293B), // Slate 800 (pour les cartes)
-      surfaceContainerLow: Color(0xFF334155), // Slate 700
-      surfaceContainer: Color(0xFF475569), // Slate 600
-      surfaceContainerHigh: Color(0xFF64748B), // Slate 500
-      surfaceContainerHighest: Color(0xFF94A3B8),
-      outline: Color(0xFF475569),
-      outlineVariant: Color(0xFF334155),
-      inverseSurface: Color(0xFFF8FAFC),
-      onInverseSurface: Color(0xFF0F172A),
-      inversePrimary: AppColors.inversePrimary,
+      surfaceContainerLowest: Color(0xFF020617), // Slate 950
+      surfaceContainerLow: Color(0xFF0B1120),
+      surfaceContainer: Color(0xFF131B2C), // Cards
+      surfaceContainerHigh: Color(0xFF1E293B),
+      surfaceContainerHighest: Color(0xFF334155),
+      onSurfaceVariant: Color(0xFF94A3B8),
+      outline: Color(0xFF334155),
+      outlineVariant: Color(0xFF1E293B),
     );
-    return _base(scheme);
+    return _base(scheme, palette);
   }
 
-  static ThemeData _base(ColorScheme scheme) {
+  static ThemeData _base(ColorScheme scheme, AppPalette palette) {
     final textTheme = const TextTheme(
       displayLarge: AppTypography.displayLg,
       headlineLarge: AppTypography.headlineLg,
@@ -94,36 +84,44 @@ class AppTheme {
       labelLarge: AppTypography.labelMd,
       labelMedium: AppTypography.labelMd,
       labelSmall: AppTypography.labelSm,
-    ).apply(
-      bodyColor: scheme.onSurface,
-      displayColor: scheme.onSurface,
-    );
+    ).apply(bodyColor: scheme.onSurface, displayColor: scheme.onSurface);
 
     return ThemeData(
       colorScheme: scheme,
+      extensions: [AppPaletteTheme(palette)],
       useMaterial3: true,
       fontFamily: AppTypography.fontFamily,
       scaffoldBackgroundColor: scheme.surface,
       textTheme: textTheme,
       visualDensity: VisualDensity.standard,
       cardTheme: const CardThemeData(elevation: 0, margin: EdgeInsets.zero),
-      dividerTheme: DividerThemeData(color: scheme.surfaceContainer, space: 1),
+      dividerTheme: DividerThemeData(color: scheme.outlineVariant, space: 1, thickness: 1),
+      popupMenuTheme: PopupMenuThemeData(
+        color: scheme.surfaceContainerLowest,
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          side: BorderSide(color: scheme.outlineVariant),
+        ),
+      ),
       inputDecorationTheme: InputDecorationTheme(
         isDense: true,
         filled: true,
         fillColor: scheme.surfaceContainerLowest,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          borderSide: const BorderSide(color: AppColors.outlineVariant),
+          borderSide: BorderSide(color: scheme.outlineVariant),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          borderSide: const BorderSide(color: AppColors.outlineVariant),
+          borderSide: BorderSide(color: scheme.outlineVariant),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderSide: BorderSide(color: scheme.primary, width: 2),
         ),
+        labelStyle: textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+        hintStyle: textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
@@ -131,10 +129,51 @@ class AppTheme {
           foregroundColor: scheme.onPrimary,
           textStyle: AppTypography.labelMd,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.xl),
+            borderRadius: BorderRadius.circular(AppRadius.lg), // SaaS buttons are not pills
           ),
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: scheme.onSurface,
+          side: BorderSide(color: scheme.outlineVariant),
+          textStyle: AppTypography.labelMd,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         ),
       ),
     );
   }
+}
+
+/// Rend le template courant accessible depuis n'importe quel widget, pour les
+/// besoins que [ColorScheme] ne couvre pas (couleur d'accent, libellé).
+@immutable
+class AppPaletteTheme extends ThemeExtension<AppPaletteTheme> {
+  const AppPaletteTheme(this.palette);
+
+  final AppPalette palette;
+
+  @override
+  AppPaletteTheme copyWith({AppPalette? palette}) =>
+      AppPaletteTheme(palette ?? this.palette);
+
+  @override
+  AppPaletteTheme lerp(covariant AppPaletteTheme? other, double t) =>
+      t < 0.5 ? this : (other ?? this);
+}
+
+/// Raccourcis de thème dans les widgets : `context.colors.primary`.
+extension ThemeContextX on BuildContext {
+  /// Nuancier du thème courant.
+  ColorScheme get colors => Theme.of(this).colorScheme;
+
+  /// Template visuel choisi par le commerçant.
+  AppPalette get palette =>
+      Theme.of(this).extension<AppPaletteTheme>()?.palette ??
+      AppPalette.fallback;
 }

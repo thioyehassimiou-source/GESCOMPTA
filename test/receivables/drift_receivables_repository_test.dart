@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gescompta/core/database/database.dart';
-import 'package:gescompta/features/receivables/data/repositories/drift_receivables_repository.dart';
+import 'package:nmashop/core/database/database.dart';
+import 'package:nmashop/features/receivables/data/repositories/drift_receivables_repository.dart';
 
 /// Vérifie le cahier de crédit : solde par client agrégé en SQL, ventes soldées
 /// et ventes comptoir exclues, tri par solde décroissant.

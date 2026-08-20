@@ -30,11 +30,8 @@ String formatGnfCompact(num amount) {
 
 final NumberFormat _compact = NumberFormat('#,##0.#', 'fr');
 
-/// Formatage d'une quantité (masque les décimales inutiles : 3.0 → « 3 »).
-String formatQuantity(num qty) {
-  if (qty == qty.roundToDouble()) return qty.toInt().toString();
-  return qty.toString();
-}
+/// Formatage d'une quantité (toujours entière depuis le retrait du vrac).
+String formatQuantity(num qty) => qty.toInt().toString();
 
 final DateFormat _date = DateFormat('dd/MM/yyyy', 'fr');
 final DateFormat _dateTime = DateFormat('dd/MM/yyyy HH:mm', 'fr');

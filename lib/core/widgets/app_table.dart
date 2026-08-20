@@ -5,20 +5,18 @@ class AppTable extends StatelessWidget {
   final List<DataColumn> columns;
   final List<DataRow> rows;
 
-  const AppTable({
-    super.key,
-    required this.columns,
-    required this.rows,
-  });
+  const AppTable({super.key, required this.columns, required this.rows});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Theme(
       data: theme.copyWith(
         dataTableTheme: DataTableThemeData(
-          headingRowColor: WidgetStateProperty.all(theme.colorScheme.secondaryContainer.withValues(alpha: 0.5)),
+          headingRowColor: WidgetStateProperty.all(
+            theme.colorScheme.secondaryContainer.withValues(alpha: 0.5),
+          ),
           dataRowColor: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.hovered)) {
               return theme.colorScheme.surfaceContainerLow;
@@ -34,10 +32,7 @@ class AppTable extends StatelessWidget {
           columnSpacing: AppSpacing.lg,
         ),
       ),
-      child: DataTable(
-        columns: columns,
-        rows: rows,
-      ),
+      child: DataTable(columns: columns, rows: rows),
     );
   }
 }

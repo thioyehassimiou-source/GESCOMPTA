@@ -1,14 +1,23 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import 'package:printing/printing.dart';
 
 import '../../../core/domain/payment_method.dart';
 import '../../../core/format/formatters.dart';
+import '../../../core/providers/app_settings_provider.dart';
+import '../../../core/services/pdf_receipt_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_chip.dart';
+import '../../../core/widgets/app_page_header.dart';
 import '../../stock/application/stock_providers.dart';
 import '../../stock/domain/entities/product.dart';
 import '../application/sale_cart_controller.dart';
@@ -21,19 +30,116 @@ class SalesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return const Padding(
-      padding: EdgeInsets.all(AppSpacing.lg),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(flex: 3, child: _ProductPicker()),
-          SizedBox(width: AppSpacing.lg),
-          SizedBox(width: 360, child: _CartPanel()),
-        ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= 720;
+
+        if (isWide) {
+          // ── Mode large : sélection produits + panier côte à côte ──
+          return Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Expanded(flex: 3, child: _ProductPicker()),
+                const SizedBox(width: AppSpacing.lg),
+                SizedBox(
+                  width: (constraints.maxWidth * 0.32).clamp(300.0, 400.0),
+                  child: const _CartPanel(),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // ── Mode compact : produits en plein écran + bouton panier flottant ──
+        return const _CompactSalesLayout();
+      },
+    );
+  }
+}
+
+/// Layout compact (mobile / fenêtre étroite) : produits en plein écran avec
+/// un bouton fixe en bas pour ouvrir le panneau panier en bottom sheet.
+class _CompactSalesLayout extends ConsumerWidget {
+  const _CompactSalesLayout();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cartState = ref.watch(saleCartControllerProvider);
+    final itemCount = cartState.lines.fold(0, (sum, l) => sum + l.quantity);
+
+    return Stack(
+      children: [
+        Padding(
+          padding: EdgeInsets.only(
+            left: AppSpacing.md,
+            right: AppSpacing.md,
+            top: AppSpacing.md,
+            bottom: itemCount > 0 ? 80 : AppSpacing.md,
+          ),
+          child: const _ProductPicker(),
+        ),
+
+        // Bouton panier flottant en bas
+        Positioned(
+          left: AppSpacing.md,
+          right: AppSpacing.md,
+          bottom: AppSpacing.md,
+          child: AnimatedSlide(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOut,
+            offset: itemCount > 0 ? Offset.zero : const Offset(0, 2),
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 200),
+              opacity: itemCount > 0 ? 1 : 0,
+              child: FilledButton.icon(
+                onPressed: itemCount > 0
+                    ? () => _openCartSheet(context)
+                    : null,
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.xl),
+                  ),
+                ),
+                icon: const Icon(Icons.shopping_cart_outlined),
+                label: Text(
+                  itemCount > 0
+                      ? 'Voir le panier ($itemCount article${itemCount > 1 ? "s" : ""})'
+                      : 'Panier vide',
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w700, fontSize: 15),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _openCartSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.9,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (ctx, scrollController) => ClipRRect(
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppRadius.xl),
+          ),
+          child: const _CartPanel(),
+        ),
       ),
     );
   }
 }
+
 
 // ─────────────────────────── Volet produits ───────────────────────────
 
@@ -60,39 +166,36 @@ class _ProductPickerState extends ConsumerState<_ProductPicker> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // ── En-tête ──
-        Row(
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Vendre', style: AppTypography.headlineMd),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  'Touchez un produit pour l\'ajouter à la vente.',
-                  style: AppTypography.bodySm
-                      .copyWith(color: AppColors.onSurfaceVariant),
-                ),
-              ],
-            ),
-          ],
+        AppPageHeader(
+          title: 'Caisse POS',
+          subtitle: 'Sélectionnez ou scannez un produit pour l\'ajouter au panier',
+          icon: Icons.point_of_sale_rounded,
+          gradientColors: [AppColors.brandNavy, context.colors.primary],
         ),
         const SizedBox(height: AppSpacing.md),
 
         // ── Barre de recherche ──
         AppCard(
           padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.xs,
+          ),
           child: TextField(
             decoration: InputDecoration(
-              prefixIcon: Icon(Icons.search,
-                  color: theme.colorScheme.onSurfaceVariant, size: 20),
+              prefixIcon: Icon(
+                Icons.search,
+                color: theme.colorScheme.onSurfaceVariant,
+                size: 20,
+              ),
               hintText: 'Rechercher un produit…',
-              hintStyle: AppTypography.bodySm
-                  .copyWith(color: AppColors.onSurfaceVariant),
+              hintStyle: AppTypography.bodySm.copyWith(
+                color: context.colors.onSurfaceVariant,
+              ),
               border: InputBorder.none,
               isDense: true,
-              contentPadding:
-                  const EdgeInsets.symmetric(vertical: AppSpacing.base),
+              contentPadding: const EdgeInsets.symmetric(
+                vertical: AppSpacing.base,
+              ),
             ),
             style: AppTypography.bodySm,
             onChanged: (v) => setState(() => _query = v.trim().toLowerCase()),
@@ -105,42 +208,57 @@ class _ProductPickerState extends ConsumerState<_ProductPicker> {
           child: productsAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => Center(
-              child: Text('Erreur : $e',
-                  style:
-                      AppTypography.bodySm.copyWith(color: AppColors.error)),
+              child: Text(
+                'Erreur : $e',
+                style: AppTypography.bodySm.copyWith(color: context.colors.error),
+              ),
             ),
             data: (products) {
               final visible = products
-                  .where((p) =>
-                      p.isActive &&
-                      (_query.isEmpty ||
-                          p.name.toLowerCase().contains(_query)))
+                  .where(
+                    (p) =>
+                        p.isActive &&
+                        (_query.isEmpty ||
+                            p.name.toLowerCase().contains(_query)),
+                  )
                   .toList();
               if (visible.isEmpty) {
                 return Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.inventory_2_outlined,
-                          size: 48,
-                          color: theme.colorScheme.onSurfaceVariant
-                              .withValues(alpha: 0.4)),
+                      Icon(
+                        Icons.inventory_2_outlined,
+                        size: 48,
+                        color: theme.colorScheme.onSurfaceVariant.withValues(
+                          alpha: 0.4,
+                        ),
+                      ),
                       const SizedBox(height: AppSpacing.md),
                       Text(
                         products.isEmpty
-                            ? 'Aucun produit.\nAjoutez-en dans « Mes produits ».'
+                            ? 'Votre stock est vide.\nAjoutez vos premiers produits pour commencer à vendre.'
                             : 'Aucun produit ne correspond à « $_query ».',
                         textAlign: TextAlign.center,
-                        style: AppTypography.bodySm
-                            .copyWith(color: AppColors.onSurfaceVariant),
+                        style: AppTypography.bodySm.copyWith(
+                          color: context.colors.onSurfaceVariant,
+                        ),
                       ),
+                      if (products.isEmpty) ...[
+                        const SizedBox(height: AppSpacing.md),
+                        AppButton.secondary(
+                          label: 'Gérer le stock (Stock)',
+                          icon: Icons.inventory_2_outlined,
+                          onPressed: () => context.go('/produits'),
+                        ),
+                      ],
                     ],
                   ),
                 );
+
               }
               return GridView.builder(
-                gridDelegate:
-                    const SliverGridDelegateWithMaxCrossAxisExtent(
+                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                   maxCrossAxisExtent: 200,
                   mainAxisExtent: 110,
                   crossAxisSpacing: AppSpacing.md,
@@ -166,7 +284,7 @@ class _ProductTile extends ConsumerWidget {
   const _ProductTile({required this.product, required this.cartQuantity});
 
   final Product product;
-  final double cartQuantity;
+  final int cartQuantity;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -178,9 +296,8 @@ class _ProductTile extends ConsumerWidget {
     if (outOfStock) {
       chipStatus = AppChipStatus.neutral;
       chipLabel = 'Rupture';
-    } else if (product.stockQuantity <= (product.lowStockThreshold > 0
-        ? product.lowStockThreshold
-        : 3)) {
+    } else if (product.stockQuantity <=
+        (product.lowStockThreshold > 0 ? product.lowStockThreshold : 3)) {
       chipStatus = AppChipStatus.warning;
       chipLabel = 'Stock bas';
     } else {
@@ -193,43 +310,60 @@ class _ProductTile extends ConsumerWidget {
       onTap: outOfStock
           ? null
           : () => ref
-              .read(saleCartControllerProvider.notifier)
-              .addProduct(product),
+                .read(saleCartControllerProvider.notifier)
+                .addProduct(product),
       hoverBorder: !outOfStock,
       child: Stack(
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
             children: [
-              // Nom produit
-              Expanded(
-                child: Text(
-                  product.name,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.labelMd.copyWith(
-                    color: outOfStock
-                        ? AppColors.onSurfaceVariant
-                        : AppColors.onSurface,
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              // Prix + statut
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    formatGnf(product.salePrice),
-                    style: AppTypography.labelMd.copyWith(
-                      color: outOfStock
-                          ? AppColors.onSurfaceVariant
-                          : AppColors.primary,
+              if (product.imageUrl != null && File(product.imageUrl!).existsSync())
+                Padding(
+                  padding: const EdgeInsets.only(right: AppSpacing.xs),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    child: Image.file(
+                      File(product.imageUrl!),
+                      width: 36,
+                      height: 36,
+                      fit: BoxFit.cover,
                     ),
                   ),
-                  AppChip(label: chipLabel, status: chipStatus),
-                ],
+                ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      product.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.labelMd.copyWith(
+                        color: outOfStock
+                            ? context.colors.onSurfaceVariant
+                            : context.colors.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Wrap(
+                      spacing: 4,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(
+                          formatGnf(product.salePrice),
+                          style: AppTypography.labelMd.copyWith(
+                            color: outOfStock
+                                ? context.colors.onSurfaceVariant
+                                : context.colors.primary,
+                          ),
+                        ),
+                        AppChip(label: chipLabel, status: chipStatus),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -241,17 +375,17 @@ class _ProductTile extends ConsumerWidget {
               child: Container(
                 width: 22,
                 height: 22,
-                decoration: const BoxDecoration(
-                  color: AppColors.primary,
+                decoration: BoxDecoration(
+                  color: context.colors.primary,
                   shape: BoxShape.circle,
                 ),
                 alignment: Alignment.center,
                 child: Text(
                   formatQuantity(cartQuantity),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.onPrimary,
+                    color: context.colors.onPrimary,
                   ),
                 ),
               ),
@@ -288,7 +422,8 @@ class _CartPanel extends ConsumerWidget {
                 ? _EmptyCartPlaceholder()
                 : ListView.separated(
                     padding: const EdgeInsets.symmetric(
-                        vertical: AppSpacing.base),
+                      vertical: AppSpacing.base,
+                    ),
                     itemCount: state.lines.length,
                     separatorBuilder: (_, i) => Divider(
                       height: 1,
@@ -318,14 +453,18 @@ class _CartPanel extends ConsumerWidget {
                 // Total
                 Row(
                   children: [
-                    Text('Total',
-                        style: AppTypography.labelMd
-                            .copyWith(color: AppColors.onSurfaceVariant)),
+                    Text(
+                      'Total',
+                      style: AppTypography.labelMd.copyWith(
+                        color: context.colors.onSurfaceVariant,
+                      ),
+                    ),
                     const Spacer(),
                     Text(
                       formatGnf(state.total),
-                      style: AppTypography.headlineMd
-                          .copyWith(color: AppColors.primary),
+                      style: AppTypography.headlineMd.copyWith(
+                        color: context.colors.primary,
+                      ),
                     ),
                   ],
                 ),
@@ -363,7 +502,9 @@ class _CartHeader extends StatelessWidget {
     final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLowest,
         border: Border(
@@ -376,17 +517,17 @@ class _CartHeader extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: AppColors.primaryContainer.withValues(alpha: 0.15),
+              color: context.colors.primaryContainer.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
-            child: const Icon(Icons.shopping_cart_outlined,
-                size: 18, color: AppColors.primary),
+            child: Icon(
+              Icons.shopping_cart_outlined,
+              size: 18,
+              color: context.colors.primary,
+            ),
           ),
           const SizedBox(width: AppSpacing.base),
-          Expanded(
-            child: Text('Vente en cours',
-                style: AppTypography.labelMd),
-          ),
+          Expanded(child: Text('Vente en cours', style: AppTypography.labelMd)),
           if (!isEmpty)
             AppButton.secondary(
               label: 'Vider',
@@ -412,20 +553,22 @@ class _EmptyCartPlaceholder extends StatelessWidget {
             Icon(
               Icons.shopping_cart_outlined,
               size: 56,
-              color: AppColors.outlineVariant,
+              color: context.colors.outlineVariant,
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
               'Panier vide',
-              style: AppTypography.labelMd
-                  .copyWith(color: AppColors.onSurfaceVariant),
+              style: AppTypography.labelMd.copyWith(
+                color: context.colors.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
               'Cliquez sur un produit à gauche\npour l\'ajouter.',
               textAlign: TextAlign.center,
-              style: AppTypography.bodySm
-                  .copyWith(color: AppColors.outlineVariant),
+              style: AppTypography.bodySm.copyWith(
+                color: context.colors.outlineVariant,
+              ),
             ),
           ],
         ),
@@ -455,36 +598,160 @@ class _SubmitButton extends ConsumerWidget {
 
   Future<void> _submit(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
-    final result =
-        await ref.read(saleCartControllerProvider.notifier).submit();
+    final appSettings = ref.read(appSettingsProvider);
+    final cartState = ref.read(saleCartControllerProvider);
+
+    // Préparer les lignes pour le reçu PDF avant la remise à zéro du panier
+    final receiptLines = [
+      for (final l in cartState.lines)
+        ReceiptLineItem(
+          name: l.name,
+          unit: l.unit,
+          quantity: l.quantity,
+          unitPrice: l.unitPrice,
+          lineTotal: l.lineTotal,
+        ),
+    ];
+    final customerName = cartState.customerName.trim();
+    final paymentLabel = switch (cartState.method) {
+      PaymentMethod.cash => 'Espèces',
+      PaymentMethod.mobileMoney => 'Mobile Money',
+      PaymentMethod.bank => 'Banque',
+      PaymentMethod.credit => 'Crédit',
+    };
+
+    final result = await ref.read(saleCartControllerProvider.notifier).submit();
     if (!context.mounted) return;
 
     switch (result) {
       case RecordSaleSuccess(:final sale):
-        messenger.showSnackBar(SnackBar(
-          backgroundColor: AppColors.primaryContainer,
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
-          content: Text(
-            sale.isCredit
-                ? '✅ Vente (${sale.reference}) — crédit de ${formatGnf(sale.creditAmount)} noté.'
-                : '✅ Vente enregistrée (${sale.reference}).',
-            style: AppTypography.bodySm.copyWith(color: AppColors.onPrimaryContainer),
+        messenger.showSnackBar(
+          SnackBar(
+            backgroundColor: context.colors.primaryContainer,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+            ),
+            content: Text(
+              sale.isCredit
+                  ? '✅ Vente (${sale.reference}) — crédit de ${formatGnf(sale.creditAmount)} noté.'
+                  : '✅ Vente enregistrée (${sale.reference}).',
+              style: AppTypography.bodySm.copyWith(
+                color: context.colors.onPrimaryContainer,
+              ),
+            ),
           ),
-        ));
+        );
+
+        final receiptData = ReceiptData(
+          reference: sale.reference,
+          date: sale.date,
+          businessName: appSettings.businessName,
+          businessPhone: appSettings.businessPhone,
+          businessAddress: appSettings.businessAddress,
+          businessNif: appSettings.businessNif,
+          lines: receiptLines,
+          total: sale.total,
+          amountPaid: sale.amountPaid,
+          creditAmount: sale.creditAmount,
+          paymentMethodLabel: paymentLabel,
+          customerName: customerName.isNotEmpty ? customerName : null,
+        );
+
+        _showReceiptDialog(context, receiptData);
+
       case RecordSaleFailure(:final error):
-        messenger.showSnackBar(SnackBar(
-          backgroundColor: AppColors.errorContainer,
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
-          content: Text(
-            error.message,
-            style: AppTypography.bodySm.copyWith(color: AppColors.onErrorContainer),
+        messenger.showSnackBar(
+          SnackBar(
+            backgroundColor: context.colors.errorContainer,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+            ),
+            content: Text(
+              error.message,
+              style: AppTypography.bodySm.copyWith(
+                color: context.colors.onErrorContainer,
+              ),
+            ),
           ),
-        ));
+        );
     }
+  }
+
+  void _showReceiptDialog(BuildContext context, ReceiptData receiptData) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+          ),
+          backgroundColor: context.colors.surfaceContainerLowest,
+          title: Row(
+            children: [
+              Icon(
+                Icons.check_circle,
+                color: context.colors.primary,
+                size: 24,
+              ),
+              SizedBox(width: AppSpacing.sm),
+              Expanded(child: Text('Vente enregistrée !')),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Référence : ${receiptData.reference}',
+                style: AppTypography.labelMd,
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                'Montant Total : ${formatGnf(receiptData.total)}',
+                style: AppTypography.bodySm,
+              ),
+              if (receiptData.isCredit) ...[
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'Reste à payer (Crédit) : ${formatGnf(receiptData.creditAmount)}',
+                  style: AppTypography.bodySm.copyWith(
+                    color: context.colors.error,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                'Souhaitez-vous imprimer ou exporter le reçu PDF ?',
+                style: AppTypography.bodySm.copyWith(
+                  color: context.colors.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            AppButton.secondary(
+              label: 'Fermer',
+              onPressed: () => Navigator.of(dialogContext).pop(),
+            ),
+            AppButton(
+              icon: Icons.print_outlined,
+              label: 'Imprimer / Reçu PDF',
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                Printing.layoutPdf(
+                  name: 'Recu_${receiptData.reference}',
+                  onLayout: (_) => PdfReceiptService.generateReceiptPdf(receiptData),
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 }
 
@@ -504,7 +771,9 @@ class _CartLineTile extends ConsumerWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md, vertical: AppSpacing.base),
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.base,
+      ),
       child: Row(
         children: [
           // Icône produit
@@ -515,11 +784,13 @@ class _CartLineTile extends ConsumerWidget {
               color: theme.colorScheme.surfaceContainer,
               borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
-            child: Icon(Icons.inventory_2_outlined,
-                size: 16,
-                color: hasIssue
-                    ? theme.colorScheme.error
-                    : theme.colorScheme.primary),
+            child: Icon(
+              Icons.inventory_2_outlined,
+              size: 16,
+              color: hasIssue
+                  ? theme.colorScheme.error
+                  : theme.colorScheme.primary,
+            ),
           ),
           const SizedBox(width: AppSpacing.base),
 
@@ -539,7 +810,7 @@ class _CartLineTile extends ConsumerWidget {
                   style: AppTypography.labelSm.copyWith(
                     color: hasIssue
                         ? theme.colorScheme.error
-                        : AppColors.onSurfaceVariant,
+                        : context.colors.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -550,10 +821,8 @@ class _CartLineTile extends ConsumerWidget {
           _QuantityControl(
             quantity: line.quantity,
             available: line.availableStock,
-            onDecrement: () =>
-                controller.setQuantity(index, line.quantity - 1),
-            onIncrement: () =>
-                controller.setQuantity(index, line.quantity + 1),
+            onDecrement: () => controller.setQuantity(index, line.quantity - 1),
+            onIncrement: () => controller.setQuantity(index, line.quantity + 1),
           ),
 
           // Sous-total
@@ -563,7 +832,7 @@ class _CartLineTile extends ConsumerWidget {
               formatAmount(line.lineTotal),
               textAlign: TextAlign.right,
               style: AppTypography.labelMd.copyWith(
-                color: hasIssue ? AppColors.error : AppColors.primary,
+                color: hasIssue ? context.colors.error : context.colors.primary,
               ),
             ),
           ),
@@ -581,8 +850,8 @@ class _QuantityControl extends StatelessWidget {
     required this.onIncrement,
   });
 
-  final double quantity;
-  final double available;
+  final int quantity;
+  final int available;
   final VoidCallback onDecrement;
   final VoidCallback onIncrement;
 
@@ -603,15 +872,13 @@ class _QuantityControl extends StatelessWidget {
           _QtyBtn(icon: Icons.remove, onTap: onDecrement),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: Text(
-              formatQuantity(quantity),
-              style: AppTypography.labelMd,
-            ),
+            child: Text(formatQuantity(quantity), style: AppTypography.labelMd),
           ),
           _QtyBtn(
-              icon: Icons.add,
-              onTap: atMax ? null : onIncrement,
-              disabled: atMax),
+            icon: Icons.add,
+            onTap: atMax ? null : onIncrement,
+            disabled: atMax,
+          ),
         ],
       ),
     );
@@ -631,11 +898,11 @@ class _QtyBtn extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppRadius.lg),
       child: Padding(
         padding: const EdgeInsets.all(6),
-        child: Icon(icon,
-            size: 16,
-            color: disabled
-                ? AppColors.outlineVariant
-                : AppColors.onSurface),
+        child: Icon(
+          icon,
+          size: 16,
+          color: disabled ? context.colors.outlineVariant : context.colors.onSurface,
+        ),
       ),
     );
   }
@@ -651,7 +918,7 @@ class _PaymentSelector extends StatelessWidget {
 
   static const _methods = {
     PaymentMethod.cash: (Icons.payments_outlined, 'Espèces'),
-    PaymentMethod.mobileMoney: (Icons.phone_android_outlined, 'Mobile Money'),
+    PaymentMethod.mobileMoney: (Icons.phone_android_outlined, 'Mobile Money (OM/MTN)'),
     PaymentMethod.bank: (Icons.account_balance_outlined, 'Banque'),
     PaymentMethod.credit: (Icons.schedule_outlined, 'Crédit'),
   };
@@ -661,9 +928,12 @@ class _PaymentSelector extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Mode de paiement',
-            style:
-                AppTypography.labelSm.copyWith(color: AppColors.onSurfaceVariant)),
+        Text(
+          'Mode de paiement',
+          style: AppTypography.labelSm.copyWith(
+            color: context.colors.onSurfaceVariant,
+          ),
+        ),
         const SizedBox(height: AppSpacing.base),
         Wrap(
           spacing: AppSpacing.base,
@@ -679,11 +949,11 @@ class _PaymentSelector extends StatelessWidget {
           ],
         ),
         if (state.isCredit) ...[
-          const SizedBox(height: AppSpacing.base),
+          const SizedBox(height: AppSpacing.md),
           TextField(
             decoration: InputDecoration(
               prefixIcon: const Icon(Icons.person_outline, size: 18),
-              labelText: 'Nom du client',
+              labelText: 'Nom du client *',
               hintText: 'Ex : Mamadou Diallo',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -692,6 +962,21 @@ class _PaymentSelector extends StatelessWidget {
             ),
             style: AppTypography.bodySm,
             onChanged: controller.setCustomerName,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          TextField(
+            decoration: InputDecoration(
+              prefixIcon: const Icon(Icons.phone_outlined, size: 18),
+              labelText: 'Numéro de téléphone (WhatsApp)',
+              hintText: 'Ex : 622 12 34 56',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+              ),
+              isDense: true,
+            ),
+            style: AppTypography.bodySm,
+            keyboardType: TextInputType.phone,
+            onChanged: controller.setCustomerPhone,
           ),
         ],
       ],
@@ -719,27 +1004,33 @@ class _PaymentChip extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.base, vertical: 6),
+          horizontal: AppSpacing.base,
+          vertical: 6,
+        ),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary : AppColors.surfaceContainer,
+          color: selected ? context.colors.primary : context.colors.surfaceContainer,
           borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(
-            color: selected ? AppColors.primary : AppColors.outlineVariant,
+            color: selected ? context.colors.primary : context.colors.outlineVariant,
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon,
-                size: 14,
-                color:
-                    selected ? AppColors.onPrimary : AppColors.onSurfaceVariant),
+            Icon(
+              icon,
+              size: 14,
+              color: selected
+                  ? context.colors.onPrimary
+                  : context.colors.onSurfaceVariant,
+            ),
             const SizedBox(width: 4),
             Text(
               label,
               style: AppTypography.labelSm.copyWith(
-                color:
-                    selected ? AppColors.onPrimary : AppColors.onSurfaceVariant,
+                color: selected
+                    ? context.colors.onPrimary
+                    : context.colors.onSurfaceVariant,
               ),
             ),
           ],

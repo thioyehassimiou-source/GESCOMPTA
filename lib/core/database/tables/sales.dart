@@ -36,6 +36,9 @@ class Sales extends Table {
   DateTimeColumn get createdAt =>
       dateTime().withDefault(currentDateAndTime)();
 
+  /// Indique si la vente a été annulée.
+  BoolColumn get isCancelled => boolean().withDefault(const Constant(false))();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -54,12 +57,12 @@ class SaleItems extends Table {
   /// Libellé figé au moment de la vente (le produit peut changer/être supprimé ensuite).
   TextColumn get label => text()();
 
-  RealColumn get quantity => real()();
+  IntColumn get quantity => integer()();
 
   IntColumn get unitPrice => integer()();
 
   /// Coût unitaire au moment de la vente (CMP) — pour le calcul de la marge.
-  RealColumn get unitCost => real().withDefault(const Constant(0))();
+  IntColumn get unitCost => integer().withDefault(const Constant(0))();
 
   IntColumn get lineTotal => integer()();
 

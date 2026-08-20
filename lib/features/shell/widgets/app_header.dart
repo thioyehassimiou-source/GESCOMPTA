@@ -1,193 +1,173 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/providers/theme_provider.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_typography.dart';
-import '../../../core/widgets/app_search_bar.dart';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../auth/application/auth_providers.dart';
+import '../../../core/providers/theme_provider.dart';
+import '../../../core/theme/app_theme.dart';
 
 class AppHeader extends ConsumerWidget {
-  const AppHeader({super.key});
+  const AppHeader({super.key, this.isMobile = false});
+
+  final bool isMobile;
+
+  static const _titles = <String, String>{
+    '/': 'Tableau de bord',
+    '/vendre': 'Vente',
+    '/commandes': 'Commandes',
+    '/caisse': 'Caisse & Trésorerie',
+    '/devis': 'Devis & Factures',
+    '/produits': 'Stock & Produits',
+    '/clients': 'Clients',
+    '/credits': 'Crédits',
+    '/livraisons': 'Livraisons',
+    '/livreurs': 'Livreurs',
+    '/fournisseurs': 'Fournisseurs',
+    '/depenses': 'Dépenses',
+    '/rapports': 'Rapports',
+    '/equipe': 'Équipe',
+    '/reglages': 'Paramètres',
+  };
+
+  String _getTitle(String location) {
+    if (location == '/') return "Tableau de bord";
+    for (final entry in _titles.entries) {
+      if (entry.key != '/' && location.startsWith(entry.key)) {
+        return entry.value;
+      }
+    }
+    return 'N\'MaShop';
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final location = GoRouterState.of(context).matchedLocation;
-    final theme = Theme.of(context);
+    final title = _getTitle(location);
+    final user = ref.watch(authProvider);
     final isDark = ref.watch(themeProvider) == ThemeMode.dark;
 
-    String title = 'GESCOMPTA';
-    String subtitle = 'Gestion des Stocks';
-    String placeholder = 'Rechercher...';
-
-    if (location.startsWith('/fournisseurs')) {
-      title = 'Fournisseurs';
-      subtitle = 'Achats & Dettes';
-      placeholder = 'Rechercher un fournisseur ou ID d\'achat...';
-    } else if (location.startsWith('/produits')) {
-      title = 'GESCOMPTA';
-      subtitle = 'Gestion des Stocks';
-      placeholder = 'Rechercher un produit, réf. ou catégorie...';
-    }
-
     return Container(
-      height: AppSpacing.topBarHeight,
+      height: 64,
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface.withValues(alpha: 0.8),
-        boxShadow: const [
-          BoxShadow(
-              color: Color(0x14101828), offset: Offset(0, 1), blurRadius: 2),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-        child: Row(
-          children: [
-            Text(title,
-                style: AppTypography.headlineMd.copyWith(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.5)),
-            const SizedBox(width: AppSpacing.md),
-            Container(height: 24, width: 1, color: theme.colorScheme.outlineVariant),
-            const SizedBox(width: AppSpacing.md),
-            Text(subtitle.toUpperCase(),
-                style: AppTypography.labelSm.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant, letterSpacing: 1.5)),
-            const Spacer(),
-            SizedBox(
-              width: 400,
-              child: AppSearchBar(hintText: placeholder),
-            ),
-            const Spacer(),
-            // ── Bouton toggle thème ──
-            _ThemeToggle(isDark: isDark, ref: ref),
-            const SizedBox(width: AppSpacing.xs),
-            _iconButton(context, Icons.notifications_outlined, badge: true),
-            const SizedBox(width: AppSpacing.xs),
-            _iconButton(context, Icons.help_outline),
-            const SizedBox(width: AppSpacing.sm),
-            const _ProfileChip(),
-          ],
+        color: context.colors.surface,
+        border: Border(
+          bottom: BorderSide(color: context.colors.outlineVariant, width: 1),
         ),
       ),
-    );
-  }
-
-  Widget _iconButton(BuildContext context, IconData icon, {bool badge = false}) {
-    final theme = Theme.of(context);
-    return IconButton(
-      onPressed: () {},
-      icon: Stack(
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? AppSpacing.md : 28,
+      ),
+      child: Row(
         children: [
-          Icon(icon, color: theme.colorScheme.onSurfaceVariant),
-          if (badge)
-            Positioned(
-              right: 0,
-              top: 0,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.error,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: theme.colorScheme.surface, width: 1.5),
+          if (isMobile) ...[
+            IconButton(
+              icon: Icon(Icons.menu_rounded, color: context.colors.onSurface),
+              onPressed: () => Scaffold.of(context).openDrawer(),
+            ),
+            const SizedBox(width: 8),
+          ],
+          // Titre de la page
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: context.colors.onSurface,
+              letterSpacing: -0.4,
+            ),
+          ),
+          const Spacer(),
+          // Actions de droite
+          if (!isMobile) ...[
+            _HeaderAction(
+              icon: isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+              tooltip: isDark ? 'Mode clair' : 'Mode sombre',
+              onTap: () => ref.read(themeProvider.notifier).toggle(),
+            ),
+            const SizedBox(width: 4),
+            _HeaderAction(
+              icon: Icons.help_outline_rounded,
+              tooltip: 'Aide',
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("L'aide sera bientôt disponible.")),
+                );
+              },
+            ),
+            const SizedBox(width: 4),
+            _HeaderAction(
+              icon: Icons.logout_rounded,
+              tooltip: 'Déconnexion',
+              onTap: () => ref.read(authProvider.notifier).lock(),
+            ),
+            const SizedBox(width: 8),
+          ] else ...[
+            _HeaderAction(
+              icon: Icons.search_rounded,
+              tooltip: 'Rechercher',
+              onTap: () {},
+            ),
+          ],
+          // Avatar utilisateur
+          InkWell(
+            onTap: () => context.go('/reglages'),
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: context.colors.primaryContainer,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Center(
+                child: Text(
+                  user?.initials ?? '?',
+                  style: TextStyle(
+                    color: context.colors.primary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
                 ),
               ),
             ),
+          ),
         ],
       ),
-      style: IconButton.styleFrom(
-        hoverColor: theme.colorScheme.surfaceContainer,
-        shape: const CircleBorder(),
-      ),
     );
   }
 }
 
-/// Bouton de bascule thème dans l'en-tête.
-class _ThemeToggle extends StatelessWidget {
-  const _ThemeToggle({required this.isDark, required this.ref});
+class _HeaderAction extends StatelessWidget {
+  const _HeaderAction({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
 
-  final bool isDark;
-  final WidgetRef ref;
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Tooltip(
-      message: isDark ? 'Passer en mode clair' : 'Passer en mode sombre',
+      message: tooltip,
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(AppRadius.full),
+        borderRadius: BorderRadius.circular(8),
         child: InkWell(
-          onTap: () => ref.read(themeProvider.notifier).toggle(),
-          borderRadius: BorderRadius.circular(AppRadius.full),
-          hoverColor: theme.colorScheme.surfaceContainer,
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
           child: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainer,
-              borderRadius: BorderRadius.circular(AppRadius.full),
-            ),
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              transitionBuilder: (child, anim) =>
-                  RotationTransition(
-                    turns: Tween(begin: 0.8, end: 1.0).animate(anim),
-                    child: FadeTransition(opacity: anim, child: child),
-                  ),
-              child: Icon(
-                isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                key: ValueKey(isDark),
-                size: 20,
-                color: isDark
-                    ? const Color(0xFFFCD34D) // jaune soleil en mode sombre
-                    : theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
+            width: 36,
+            height: 36,
+            alignment: Alignment.center,
+            child: Icon(icon, size: 20, color: context.colors.onSurfaceVariant),
           ),
         ),
       ),
-    );
-  }
-}
-
-class _ProfileChip extends StatelessWidget {
-  const _ProfileChip();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('Alpha Diallo',
-                style: AppTypography.labelMd.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: theme.colorScheme.onSurface)),
-            Text('Guinée Commerce',
-                style: TextStyle(
-                    fontSize: 10, color: theme.colorScheme.onSurfaceVariant)),
-          ],
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: theme.colorScheme.secondaryContainer,
-            border: Border.all(color: theme.colorScheme.outlineVariant, width: 1),
-          ),
-          child: Center(
-            child: Icon(Icons.person, color: theme.colorScheme.onSecondaryContainer),
-          ),
-        ),
-      ],
     );
   }
 }
